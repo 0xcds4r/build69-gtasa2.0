@@ -4,13 +4,16 @@
 #include "game.h"
 #include "net/netgame.h"
 #include "gui/gui.h"
+#include "chatwindow.h"
 
 extern CNetGame *pNetGame;
 extern CGUI *pGUI;
+extern CChatWindow *pChatWindow;
 
 void InitGUI();
 void TryInitialiseSAMP();
 void MainLoop();
+void HookCPad();
 
 extern bool bGameInited;
 extern bool bNetworkInited;
@@ -51,21 +54,19 @@ stFile* NvFOpen__Hook(const char* r0, const char* r1, int r2, int r3)
 {
 	char path[0xFF] = { 0 };
 
-	// ----------------------------
-	if(!strncmp(r1, "DATA/PEDS.IDE", 13))
+	if (!strncmp(r1, "DATA/PEDS.IDE", 13))
 	{
-		strcpy(path, "SAMP\\peds.ide");
+		sprintf(path, "%s/SAMP/peds.ide", (const char*)(g_GTASAAdr+0x6D687C));
 		FLog("Loading peds.ide..");
 		goto open;
 	}
 	// ----------------------------
-	if(!strncmp(r1, "DATA/GTA.DAT", 12))
+	if (!strncmp(r1, "DATA/GTA.DAT", 12))
 	{
-		strcpy(path, "SAMP\\gta.dat");
+		sprintf(path, "%s/SAMP/gta.dat", (const char*)(g_GTASAAdr+0x6D687C));
 		FLog("Loading gta.dat..");
 		goto open;
 	}
-	// ----------------------------
 
 orig:
 	return NvFOpen(r0, r1, r2, r3);
@@ -89,7 +90,7 @@ open:
 	}
 }
 
-void (*CFileMgr__Initialise)(uintptr_t thiz);
+/*void (*CFileMgr__Initialise)(uintptr_t thiz);
 void CFileMgr__Initialise_Hook(uintptr_t thiz)
 {
 	uintptr_t zipStorage = ((uintptr_t(*)(const char*))(g_GTASAAdr + 0x26FE55))("/Android/data/com.rockstargames.gtasa/samp.obb");
@@ -99,7 +100,7 @@ void CFileMgr__Initialise_Hook(uintptr_t thiz)
 	}
    
 	return CFileMgr__Initialise(thiz);
-}
+}*/
 
 void (*CStream__InitImageList)();
 void CStream__InitImageList_Hook()
@@ -157,6 +158,7 @@ void CGame__InitialiseRenderWare_Hook()
 	// TextureDatabaseRuntime::Load()
 	((void (*)(const char*, int, int))(g_GTASAAdr + 0x1EA8E5))("samp", 0, 5);
 
+	// Initialise GUI
 	InitGUI();
 	
 	return;
@@ -393,15 +395,18 @@ extern "C" void pickup_ololo()
 	if(pNetGame && pNetGame->GetPickupPool())
 	{
 		CPickupPool *pPickups = pNetGame->GetPickupPool();
-		pPickups->PickedUp( ((dwParam1-(g_GTASAAdr+0x7AFD70))/0x20) );
+		if(pPickups) {
+			pPickups->PickedUp( ((dwParam1-(g_GTASAAdr+0x7AFD70))/0x20) );
+		}
 	}
 }
 
-__attribute__((naked)) void PickupPickUp_hook()
+__attribute__((naked)) void PickupPickUp_Hook()
 {
 	//LOGI("PickupPickUp_hook");
 
 	// todo: rewrite volatile to 2.0
+	//  0x12AD9E, v9 + 0x31E08D
 
 	// calculate and save ret address
 	__asm__ volatile("push {lr}\n\t"
@@ -465,6 +470,14 @@ void InstallCrashFixHooks()
 	SetupGameHook(g_GTASAAdr + 0x5A60DC, (uintptr_t)CCustomRoadsignMgr__RenderRoadsignAtomic_Hook, (uintptr_t*)&CCustomRoadsignMgr__RenderRoadsignAtomic);
 }
 
+void (*CWidget__IsTouched)(uintptr_t thiz);
+void CWidget__IsTouched_Hook(uintptr_t thiz)
+{
+	FLog("CWidget__IsTouched: 0x%x", thiz);
+	if(pChatWindow) pChatWindow->AddDebugMessage("CWidget__IsTouched: 0x%x", thiz);
+	CWidget__IsTouched(thiz);
+}
+
 void InstallGlobalHooks()
 {
 	FLog("InstallGlobalHooks");
@@ -472,17 +485,15 @@ void InstallGlobalHooks()
 	SetupGameHook(g_GTASAAdr + 0x29BFFC, (uintptr_t)MainMenuScreen__Update_Hook, (uintptr_t*)&MainMenuScreen__Update);
 	SetupGameHook(g_GTASAAdr + 0x3F641C, (uintptr_t)Render2dStuff_Hook, (uintptr_t*)&Render2dStuff);
 	SetupGameHook(g_GTASAAdr + 0x266E2C, (uintptr_t)NvFOpen__Hook, (uintptr_t*)&NvFOpen); 
-	SetupGameHook(g_GTASAAdr + 0x3F0B24, (uintptr_t)CFileMgr__Initialise_Hook, (uintptr_t*)&CFileMgr__Initialise);
 	SetupGameHook(g_GTASAAdr + 0x2CF610, (uintptr_t)CStream__InitImageList_Hook, (uintptr_t*)&CStream__InitImageList); 
 	SetupGameHook(g_GTASAAdr + 0x46F500, (uintptr_t)CGame__InitialiseRenderWare_Hook, (uintptr_t*)&CGame__InitialiseRenderWare); 
-
 	SetupGameHook(g_GTASAAdr + 0x3860C4, (uintptr_t)CModelInfo__AddPedModel_Hook, (uintptr_t*)&CModelInfo__AddPedModel);
 	SetupGameHook(g_GTASAAdr + 0x3859E8, (uintptr_t)CModelInfo__AddAtomicModel_Hook, (uintptr_t*)&CModelInfo__AddAtomicModel);
 	SetupGameHook(g_GTASAAdr + 0x40C8B0, (uintptr_t)CPools__Initialise_Hook, (uintptr_t*)&CPools__Initialise);
 	SetupGameHook(g_GTASAAdr + 0x408AD0, (uintptr_t)CPlaceable__InitMatrixArray_Hook, (uintptr_t*)&CPlaceable__InitMatrixArray);
-
-	// todo: tasks
+	// SetupGameHook(g_GTASAAdr + 0x2B32B4, (uintptr_t)CWidget__IsTouched_Hook, (uintptr_t*)&CWidget__IsTouched);
 
 	InstallCrashFixHooks();
 	InstallSAMPHooks();
+	HookCPad();
 }

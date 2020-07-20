@@ -107,6 +107,13 @@ void ARMHook::installMethodHook(uintptr_t addr, uintptr_t func)
     *(uintptr_t*)addr = func;
 }
 
+void ARMHook::installPLTHook(uintptr_t addr, uintptr_t func, uintptr_t *orig)
+{
+    ARMHook::unprotect(addr);
+    *(uintptr_t*)addr = func;
+    *orig = addr;
+}
+
 void ARMHook::InjectCode(uintptr_t addr, uintptr_t func, int reg)
 {
     char injectCode[12];

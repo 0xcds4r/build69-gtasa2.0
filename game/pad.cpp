@@ -2,9 +2,11 @@
 #include "game.h"
 #include "net/netgame.h"
 #include "util/armhook.h"
+#include "chatwindow.h"
 
 extern CGame *pGame;
 extern CNetGame *pNetGame;
+extern CChatWindow* pChatWindow;
 
 PAD_KEYS LocalPlayerKeys;
 PAD_KEYS RemotePlayerKeys[PLAYER_PED_SLOTS];
@@ -12,111 +14,6 @@ PAD_KEYS RemotePlayerKeys[PLAYER_PED_SLOTS];
 uintptr_t dwCurPlayerActor = 0;
 uint8_t byteCurPlayer = 0;
 uint8_t byteCurDriver = 0;
-
-void (*CPed__ProcessControl)(uintptr_t thiz);
-void CPed__ProcessControl_Hook(uintptr_t thiz)
-{
-	dwCurPlayerActor = thiz;
-	byteCurPlayer = FindPlayerNumFromPedPtr(dwCurPlayerActor);
-
-	if(dwCurPlayerActor && (byteCurPlayer != 0))
-	{
-		ARMHook::makeNOP(g_GTASAAdr + 0x4A2A22, 2); 
-    	CPed__ProcessControl(thiz);
-    	ARMHook::writeMemory(g_GTASAAdr + 0x4A2A22, (uintptr_t)"\xF0\xF4\x42\xEB", 4); // or \xE0\xB0 ?
-	}
-	else
-	{
-		ARMHook::writeMemory(g_GTASAAdr + 0x539BA6, (uintptr_t)"\xC4\xF8\x60\x55", 4); // or \x05\x50 ?
-    	CPed__ProcessControl(thiz);
-    	ARMHook::makeNOP(g_GTASAAdr + 0x539BA6, 2);
-	}
-
-	return;
-}
-
-void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
-{
-	VEHICLE_TYPE *pVehicle = (VEHICLE_TYPE*)thiz;
-	uintptr_t this_vtable = pVehicle->entity.vtable;
-	this_vtable -= g_GTASAAdr;
-
-	uintptr_t call_addr = 0;
-
-	switch(this_vtable)
-	{
-		// CAutomobile
-		case 0x66D688:
-		call_addr = 0x553DD5; // +
-		break;
-
-		// CBoat
-		case 0x66DA30:
-		call_addr = 0x56BE51; // +
-		break;
-
-		// CBike
-		case 0x66D800:
-		call_addr = 0x561A21; // +
-		break;
-
-		// CPlane
-		case 0x66DD94:
-		call_addr = 0x575C88; // +
-		break;
-
-		// CHeli
-		case 0x66DB44: 
-		call_addr = 0x571238; // +
-		break;
-
-		// CBmx
-		case 0x66D918:
-		call_addr = 0x568B15; // +
-		break;
-
-		// CMonsterTruck
-		case 0x66DC6C: 
-		call_addr = 0x5747F4; // +
-		break;
-
-		// CQuadBike
-		case 0x66DEBC:
-		call_addr = 0x57A280; // +
-		break;
-
-		// CTrain
-		case 0x66E10C: 
-		call_addr = 0x57D030; // +
-		break;
-	}
-
-	if(pVehicle && pVehicle->pDriver)
-	{
-		byteCurDriver = FindPlayerNumFromPedPtr((uintptr_t)pVehicle->pDriver);
-	}
-
-	if(pVehicle->pDriver && pVehicle->pDriver->dwPedType == 0 &&
-		pVehicle->pDriver != GamePool_FindPlayerPed() && 
-		*(uint8_t*)(g_GTASAAdr+0x96B9C4) == 0) // 96B9C4 ; CWorld::PlayerInFocus
-	{
-		*(uint8_t*)(g_GTASAAdr+0x96B9C4) = 0;
-
-		pVehicle->pDriver->dwPedType = 4;
-
-		// CAEVehicleAudioEntity::Service
-		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB4+1))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
-
-		pVehicle->pDriver->dwPedType = 0;
-	}
-	else
-	{
-		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB4+1))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
-	}
-
-	// VEHTYPE::ProcessControl()
-    (( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+call_addr+1))(pVehicle);
-}
 
 uint16_t (*CPad__GetPedWalkLeftRight)(uintptr_t thiz);
 uint16_t CPad__GetPedWalkLeftRight_Hook(uintptr_t thiz)
@@ -424,6 +321,113 @@ uint32_t CPad__GetHorn_Hook(uintptr_t thiz)
 	}
 }
 
+void (*CPed__ProcessControl)(uintptr_t thiz);
+void CPed__ProcessControl_Hook(uintptr_t thiz)
+{
+	// FLog("CPed__ProcessControl_Hook");
+
+	dwCurPlayerActor = thiz;
+	byteCurPlayer = FindPlayerNumFromPedPtr(dwCurPlayerActor);
+
+	if(dwCurPlayerActor && (byteCurPlayer != 0))
+	{
+		ARMHook::makeNOP(g_GTASAAdr + 0x4A2A22, 2); 
+    	CPed__ProcessControl(thiz);
+    	ARMHook::writeMemory(g_GTASAAdr + 0x4A2A22, (uintptr_t)"\xF0\xF4\x42\xEB", 4); // +
+	}
+	else
+	{
+		ARMHook::writeMemory(g_GTASAAdr + 0x539BA6, (uintptr_t)"\xC4\xF8\x60\x55", 4); // +
+    	(*CPed__ProcessControl)(thiz);
+    	ARMHook::makeNOP(g_GTASAAdr + 0x539BA6, 2);
+	}
+
+	return;
+}
+
+void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
+{
+	VEHICLE_TYPE *pVehicle = (VEHICLE_TYPE*)thiz;
+	uintptr_t this_vtable = pVehicle->entity.vtable;
+	this_vtable -= g_GTASAAdr;
+
+	uintptr_t call_addr = 0;
+
+	switch(this_vtable)
+	{
+		// CAutomobile
+		case 0x66D688:
+		call_addr = 0x553DD5; // +
+		break;
+
+		// CBoat
+		case 0x66DA30:
+		call_addr = 0x56BE51; // +
+		break;
+
+		// CBike
+		case 0x66D800:
+		call_addr = 0x561A21; // +
+		break;
+
+		// CPlane
+		case 0x66DD94:
+		call_addr = 0x575C88; // +
+		break;
+
+		// CHeli
+		case 0x66DB44: 
+		call_addr = 0x571238; // +
+		break;
+
+		// CBmx
+		case 0x66D918:
+		call_addr = 0x568B15; // +
+		break;
+
+		// CMonsterTruck
+		case 0x66DC6C: 
+		call_addr = 0x5747F4; // +
+		break;
+
+		// CQuadBike
+		case 0x66DEBC:
+		call_addr = 0x57A280; // +
+		break;
+
+		// CTrain
+		case 0x66E10C: 
+		call_addr = 0x57D030; // +
+		break;
+	}
+
+	if(pVehicle && *(uintptr_t *)(thiz + 0x464))
+	{
+		byteCurDriver = FindPlayerNumFromPedPtr(*(uintptr_t *)(thiz + 0x464));
+	}
+
+	/*if(*(uint32_t *)(thiz + 0x464) && *(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) == 0 &&
+		*(PED_TYPE**)(thiz + 0x464) != GamePool_FindPlayerPed() && 
+		*(uint8_t*)(g_GTASAAdr+0x96B9C4) == 0) // 96B9C4 ; CWorld::PlayerInFocus
+	{
+		*(uint8_t*)(g_GTASAAdr+0x96B9C4) = 0;
+
+		*(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) = 4;
+
+		// CAEVehicleAudioEntity::Service
+		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
+
+		*(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) = 0;
+	}
+	else
+	{
+		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
+	}*/
+
+	// VEHTYPE::ProcessControl()
+    (( void (*)(uintptr_t))(g_GTASAAdr+call_addr+1))(*(uintptr_t *)(thiz + 0x464));
+}
+
 void HookCPad()
 {
 	memset(&LocalPlayerKeys, 0, sizeof(PAD_KEYS));
@@ -456,5 +460,5 @@ void HookCPad()
  	SetupGameHook(g_GTASAAdr + 0x3FB300, (uintptr_t)CPad__GetAccelerate_Hook, (uintptr_t*)&CPad__GetAccelerate);                                                        
  	SetupGameHook(g_GTASAAdr + 0x3FA95C, (uintptr_t)CPad__GetBrake_Hook, (uintptr_t*)&CPad__GetBrake);                                                             
  	SetupGameHook(g_GTASAAdr + 0x3FA790, (uintptr_t)CPad__GetHandBrake_Hook, (uintptr_t*)&CPad__GetHandBrake);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FA5C8, (uintptr_t)CPad__GetHorn_Hook, (uintptr_t*)&CPad__GetHorn);                                                              
+ 	SetupGameHook(g_GTASAAdr + 0x3FA5C8, (uintptr_t)CPad__GetHorn_Hook, (uintptr_t*)&CPad__GetHorn);                                                          
 }

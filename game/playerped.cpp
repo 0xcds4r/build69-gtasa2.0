@@ -113,11 +113,11 @@ bool CPlayerPed::IsInVehicle()
 // 0.3.7
 bool CPlayerPed::IsAPassenger()
 {
-	if(m_pPed->pVehicle && IsInVehicle())
+	if(*(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590) && IsInVehicle())
 	{
 		VEHICLE_TYPE *pVehicle = *(VEHICLE_TYPE**)(m_pPed + 0x590);
 
-		if(	pVehicle->pDriver != m_pPed ||
+		if(	*(PED_TYPE**)((uintptr_t)pVehicle + 0x464) != m_pPed ||
 			pVehicle->entity.nModelIndex == TRAIN_PASSENGER ||
 			pVehicle->entity.nModelIndex == TRAIN_FREIGHT )
 			return true;
@@ -202,7 +202,7 @@ void CPlayerPed::PutDirectlyInVehicle(int iVehicleID, int iSeat)
 
 	if(iSeat == 0)
 	{
-		if(pVehicle->pDriver && *(VEHICLE_TYPE**)(m_pPed + 0x590)) return;
+		if(*(uintptr_t**)((uintptr_t)pVehicle + 0x464) && *(VEHICLE_TYPE**)(m_pPed + 0x590)) return;
 		ScriptCommand(&put_actor_in_car, m_dwGTAId, iVehicleID);
 	}
 	else
@@ -254,9 +254,9 @@ void CPlayerPed::ExitCurrentVehicle()
 
 	if(*(VEHICLE_TYPE**)(m_pPed + 0x590))
 	{
-		if(GamePool_Vehicle_GetIndex((VEHICLE_TYPE*)m_pPed->pVehicle))
+		if(GamePool_Vehicle_GetIndex(*(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590)))
 		{
-			int index = GamePool_Vehicle_GetIndex((VEHICLE_TYPE*)m_pPed->pVehicle);
+			int index = GamePool_Vehicle_GetIndex(*(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590));
 			ThisVehicleType = GamePool_Vehicle_GetAt(index);
 			if(ThisVehicleType)
 			{
@@ -275,7 +275,7 @@ int CPlayerPed::GetCurrentVehicleID()
 {
 	if(!m_pPed) return 0;
 
-	VEHICLE_TYPE *pVehicle = (VEHICLE_TYPE *)m_pPed->pVehicle;
+	VEHICLE_TYPE *pVehicle = *(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590);
 	return GamePool_Vehicle_GetIndex(pVehicle);
 }
 
@@ -283,9 +283,9 @@ int CPlayerPed::GetVehicleSeatID()
 {
 	VEHICLE_TYPE *pVehicle;
 
-	if( GetActionTrigger() == ACTION_INCAR && (pVehicle = (VEHICLE_TYPE *)m_pPed->pVehicle) != 0 ) 
+	if( GetActionTrigger() == ACTION_INCAR && (pVehicle = *(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590)) != 0 ) 
 	{
-		if(pVehicle->pDriver == m_pPed) return 0;
+		if(*(uintptr_t *)((uintptr_t)pVehicle + 0x464) == (uintptr_t)m_pPed) return 0;
 		if(pVehicle->pPassengers[0] == m_pPed) return 1;
 		if(pVehicle->pPassengers[1] == m_pPed) return 2;
 		if(pVehicle->pPassengers[2] == m_pPed) return 3;
@@ -342,7 +342,7 @@ void CPlayerPed::SetModelIndex(unsigned int uiModel)
 		CEntity::SetModelIndex(uiModel);
 
 		// reset the Ped Audio Attributes
-		(( void (*)(uintptr_t, uintptr_t))(g_GTASAAdr+0x39CE69))(((uintptr_t)m_pPed+660), (uintptr_t)m_pPed);
+		(( void (*)(uintptr_t, uintptr_t))(g_GTASAAdr+0x39CE69))(((uintptr_t)m_pPed+0x298), (uintptr_t)m_pPed);
 	}
 }
 

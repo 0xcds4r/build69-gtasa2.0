@@ -56,8 +56,11 @@ CVehicle::CVehicle(int iType, float fPosX, float fPosY, float fPosZ, float fRota
 			mat.pos.Z = fPosZ;
 
 			if( GetVehicleSubtype() != VEHICLE_SUBTYPE_BIKE && 
-				GetVehicleSubtype() != VEHICLE_SUBTYPE_PUSHBIKE)
+				GetVehicleSubtype() != VEHICLE_SUBTYPE_PUSHBIKE) 
+			{
 				mat.pos.Z += 0.25f;
+			}
+				
 
 			SetMatrix(mat);
 		}
@@ -212,9 +215,9 @@ void CVehicle::RemoveEveryoneFromVehicle()
 	float fPosZ = m_pVehicle->entity.mat->pos.Z;
 
 	int iPlayerID = 0;
-	if(m_pVehicle->pDriver)
+	if(*(uintptr_t*)((uintptr_t)m_pVehicle + 0x464))
 	{
-		iPlayerID = GamePool_Ped_GetIndex( m_pVehicle->pDriver );
+		iPlayerID = GamePool_Ped_GetIndex( *(PED_TYPE**)((uintptr_t)m_pVehicle + 0x464) );
 		ScriptCommand(&remove_actor_from_car_and_put_at, iPlayerID, fPosX, fPosY, fPosZ + 2.0f);
 	}
 
@@ -233,7 +236,7 @@ bool CVehicle::IsOccupied()
 {
 	if(m_pVehicle)
 	{
-		if(m_pVehicle->pDriver) return true;
+		if(*(uintptr_t*)((uintptr_t)m_pVehicle + 0x464)) return true;
 		if(m_pVehicle->pPassengers[0]) return true;
 		if(m_pVehicle->pPassengers[1]) return true;
 		if(m_pVehicle->pPassengers[2]) return true;

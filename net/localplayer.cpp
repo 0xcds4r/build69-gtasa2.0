@@ -62,19 +62,19 @@ void CLocalPlayer::ResetAllSyncAttributes()
 bool CLocalPlayer::Process()
 {
 	if(pChatWindow) {
-		pChatWindow->AddDebugMessage("CLocalPlayer::Process");
+		// pChatWindow->AddDebugMessage("CLocalPlayer::Process");
 	}
 
 	uint32_t dwThisTick = GetTickCount();
 
 	if(m_bIsActive && m_pPlayerPed)
 	{
-		if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #1");
+		// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #1");
 
 		// handle dead
 		if(!m_bIsWasted && m_pPlayerPed->GetActionTrigger() == ACTION_DEATH || m_pPlayerPed->IsDead())
 		{
-			if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #2");
+			// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #2");
 
 			ToggleSpectating(false);
 
@@ -95,7 +95,7 @@ bool CLocalPlayer::Process()
 			return true;
 		}
 
-		if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #3");
+		// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #3");
 
 		// server checkpoints update
 		pGame->UpdateCheckpoints();
@@ -109,13 +109,13 @@ bool CLocalPlayer::Process()
 		// SPECTATING
 		if(m_bIsSpectating)
 		{
-			if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #4");
+			// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #4");
 			ProcessSpectating();
 		}
 		// DRIVER
 		else if(m_pPlayerPed->IsInVehicle() && !m_pPlayerPed->IsAPassenger())
 		{
-			if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #5");
+			// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #5");
 
 			CVehiclePool *pVehiclePool = pNetGame->GetVehiclePool();
 			CVehicle *pVehicle;
@@ -128,7 +128,7 @@ bool CLocalPlayer::Process()
 
 			if((dwThisTick - m_dwLastSendTick) > (unsigned int)GetOptimumInCarSendRate())
 			{
-				if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #6");
+				// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #6");
 
 				m_dwLastSendTick = GetTickCount();
 				SendInCarFullSyncData();
@@ -137,7 +137,7 @@ bool CLocalPlayer::Process()
 		// ONFOOT
 		else if(m_pPlayerPed->GetActionTrigger() == ACTION_NORMAL || m_pPlayerPed->GetActionTrigger() == ACTION_SCOPE)
 		{
-			if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #7");
+			// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #7");
 
 			UpdateSurfing();
 
@@ -149,7 +149,7 @@ bool CLocalPlayer::Process()
 
 			if((dwThisTick - m_dwLastSendTick) > (unsigned int)GetOptimumOnFootSendRate())
 			{
-				if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #8");
+				// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #8");
 
 				m_dwLastSendTick = GetTickCount();
 				SendOnFootFullSyncData();
@@ -158,15 +158,15 @@ bool CLocalPlayer::Process()
 		// PASSENGER
 		else if(m_pPlayerPed->IsInVehicle() && m_pPlayerPed->IsAPassenger())
 		{
-			pChatWindow->AddDebugMessage("CLocalPlayer::Process #9");
+			// pChatWindow->AddDebugMessage("CLocalPlayer::Process #9");
 
 			if((dwThisTick - m_dwLastSendTick) > (unsigned int)GetOptimumInCarSendRate())
 			{
-				if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #10");
+				// if(pChatWindow) pChatWindow->AddDebugMessage("CLocalPlayer::Process #10");
 
 				m_dwLastSendTick = GetTickCount();
 				SendPassengerFullSyncData();
-			}
+			} 
 		}
 	}
 
@@ -470,7 +470,7 @@ void CLocalPlayer::SendOnFootFullSyncData()
 	ofSync.vecPos.Y = matPlayer.pos.Y;
 	ofSync.vecPos.Z = matPlayer.pos.Z;
 
-	FLog("CLocalPlayer::SendOnFootFullSyncData");
+	// FLog("CLocalPlayer::SendOnFootFullSyncData");
 
 	ofSync.quat.SetFromMatrix(matPlayer);
 	ofSync.quat.Normalize();
@@ -499,24 +499,24 @@ void CLocalPlayer::SendOnFootFullSyncData()
 
 	ofSync.dwAnimation = 0;
 
-	FLog("[OnFoot] X: %f Y: %f Z: %f", ofSync.vecPos.X, ofSync.vecPos.Y, ofSync.vecPos.Z);
-	FLog("[OnFoot] moveX: %f moveY: %f moveZ: %f", vecMoveSpeed.X, vecMoveSpeed.Y, vecMoveSpeed.Z);
-	FLog("[OnFoot] lrAnalog: %d, udAnalog: %d, wKeys: %d", lrAnalog, udAnalog, wKeys);
-	FLog("[OnFoot] Health: %f, Armour: %f", ofSync.byteHealth, ofSync.byteArmour);
+	//FLog("[OnFoot] X: %f Y: %f Z: %f", ofSync.vecPos.X, ofSync.vecPos.Y, ofSync.vecPos.Z);
+	//FLog("[OnFoot] moveX: %f moveY: %f moveZ: %f", vecMoveSpeed.X, vecMoveSpeed.Y, vecMoveSpeed.Z);
+	//FLog("[OnFoot] lrAnalog: %d, udAnalog: %d, wKeys: %d", lrAnalog, udAnalog, wKeys);
+	//FLog("[OnFoot] Health: %f, Armour: %f", ofSync.byteHealth, ofSync.byteArmour);
 
 	if(pChatWindow)
 	{
-		pChatWindow->AddDebugMessage("[OnFoot] X: %f Y: %f Z: %f", ofSync.vecPos.X, ofSync.vecPos.Y, ofSync.vecPos.Z);
-		pChatWindow->AddDebugMessage("[OnFoot] moveX: %f moveY: %f moveZ: %f", vecMoveSpeed.X, vecMoveSpeed.Y, vecMoveSpeed.Z);
-		pChatWindow->AddDebugMessage("[OnFoot] lrAnalog: %d, udAnalog: %d, wKeys: %d", lrAnalog, udAnalog, wKeys);
-		pChatWindow->AddDebugMessage("[OnFoot] Health: %f, Armour: %f", m_pPlayerPed->GetHealth(), m_pPlayerPed->GetArmour());
+		//pChatWindow->AddDebugMessage("[OnFoot] X: %f Y: %f Z: %f", ofSync.vecPos.X, ofSync.vecPos.Y, ofSync.vecPos.Z);
+		//pChatWindow->AddDebugMessage("[OnFoot] moveX: %f moveY: %f moveZ: %f", vecMoveSpeed.X, vecMoveSpeed.Y, vecMoveSpeed.Z);
+		//pChatWindow->AddDebugMessage("[OnFoot] lrAnalog: %d, udAnalog: %d, wKeys: %d", lrAnalog, udAnalog, wKeys);
+		//pChatWindow->AddDebugMessage("[OnFoot] Health: %f, Armour: %f", m_pPlayerPed->GetHealth(), m_pPlayerPed->GetArmour());
 	}
 
 	if( (GetTickCount() - m_dwLastUpdateOnFootData) > 500 || memcmp(&m_OnFootData, &ofSync, sizeof(ONFOOT_SYNC_DATA)))
 	{
-		FLog("[OnFoot] Send!");
+		// FLog("[OnFoot] Send!");//
 		if(pChatWindow) {
-			pChatWindow->AddDebugMessage("[OnFoot] Send!");
+			//pChatWindow->AddDebugMessage("[OnFoot] Send!");
 		}
 
 		m_dwLastUpdateOnFootData = GetTickCount();

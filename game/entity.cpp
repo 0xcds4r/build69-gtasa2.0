@@ -12,75 +12,89 @@ extern CChatWindow *pChatWindow;
 // 0.3.7
 void CEntity::GetMatrix(PMATRIX4X4 Matrix)
 {
-	if (!m_pEntity || !m_pEntity->mat) return;
+	if (!m_pEntity) {
+		return;
+	}
 
-	Matrix->right.X = m_pEntity->mat->right.X;
-	Matrix->right.Y = m_pEntity->mat->right.Y;
-	Matrix->right.Z = m_pEntity->mat->right.Z;
+	MATRIX4X4* mat = *(MATRIX4X4**)((uintptr_t)m_pEntity + 20);
+	if(!mat) {
+		return;
+	}
 
-	Matrix->up.X = m_pEntity->mat->up.X;
-	Matrix->up.Y = m_pEntity->mat->up.Y;
-	Matrix->up.Z = m_pEntity->mat->up.Z;
+	Matrix->right.X = mat->right.X;
+	Matrix->right.Y = mat->right.Y;
+	Matrix->right.Z = mat->right.Z;
 
-	Matrix->at.X = m_pEntity->mat->at.X;
-	Matrix->at.Y = m_pEntity->mat->at.Y;
-	Matrix->at.Z = m_pEntity->mat->at.Z;
+	Matrix->up.X = mat->up.X;
+	Matrix->up.Y = mat->up.Y;
+	Matrix->up.Z = mat->up.Z;
 
-	Matrix->pos.X = m_pEntity->mat->pos.X;
-	Matrix->pos.Y = m_pEntity->mat->pos.Y;
-	Matrix->pos.Z = m_pEntity->mat->pos.Z;
+	Matrix->at.X = mat->at.X;
+	Matrix->at.Y = mat->at.Y;
+	Matrix->at.Z = mat->at.Z;
+
+	Matrix->pos.X = mat->pos.X;
+	Matrix->pos.Y = mat->pos.Y;
+	Matrix->pos.Z = mat->pos.Z;
 }
 
 // 0.3.7
 void CEntity::SetMatrix(MATRIX4X4 Matrix)
 {
-	if (!m_pEntity || !m_pEntity->mat) return;
+	if (!m_pEntity) {
+		return;
+	}
 
-	m_pEntity->mat->right.X = Matrix.right.X;
-	m_pEntity->mat->right.Y = Matrix.right.Y;
-	m_pEntity->mat->right.Z = Matrix.right.Z;
+	MATRIX4X4* mat = *(MATRIX4X4**)((uintptr_t)m_pEntity + 20);
+	if(!mat) {
+		return;
+	}
+  
+  	mat->right.X = Matrix.right.X;
+	mat->right.Y = Matrix.right.Y;
+	mat->right.Z = Matrix.right.Z;
 
-	m_pEntity->mat->up.X = Matrix.up.X;
-	m_pEntity->mat->up.Y = Matrix.up.Y;
-	m_pEntity->mat->up.Z = Matrix.up.Z;
+	mat->up.X = Matrix.up.X;
+	mat->up.Y = Matrix.up.Y;
+	mat->up.Z = Matrix.up.Z;
 
-	m_pEntity->mat->at.X = Matrix.at.X;
-	m_pEntity->mat->at.Y = Matrix.at.Y;
-	m_pEntity->mat->at.Z = Matrix.at.Z;
+	mat->at.X = Matrix.at.X;
+	mat->at.Y = Matrix.at.Y;
+	mat->at.Z = Matrix.at.Z;
 
-	m_pEntity->mat->pos.X = Matrix.pos.X;
-	m_pEntity->mat->pos.Y = Matrix.pos.Y;
-	m_pEntity->mat->pos.Z = Matrix.pos.Z;
+	mat->pos.X = Matrix.pos.X;
+	mat->pos.Y = Matrix.pos.Y;
+	mat->pos.Z = Matrix.pos.Z;
 }
 
 // 0.3.7
 void CEntity::GetMoveSpeedVector(PVECTOR Vector)
 {
-	Vector->X = m_pEntity->vecMoveSpeed.X;
-	Vector->Y = m_pEntity->vecMoveSpeed.Y;
-	Vector->Z = m_pEntity->vecMoveSpeed.Z;
+	Vector->X = *(float *)((uintptr_t)m_pEntity + 72);
+	Vector->Y = *(float *)((uintptr_t)m_pEntity + 76);
+	Vector->Z = *(float *)((uintptr_t)m_pEntity + 80);
 }
 
 // 0.3.7
 void CEntity::SetMoveSpeedVector(VECTOR Vector)
 {
-	m_pEntity->vecMoveSpeed.X = Vector.X;
-	m_pEntity->vecMoveSpeed.Y = Vector.Y;
-	m_pEntity->vecMoveSpeed.Z = Vector.Z;
+	*(float *)((uintptr_t)m_pEntity + 72) = Vector.X;
+	*(float *)((uintptr_t)m_pEntity + 76) = Vector.Y;
+	*(float *)((uintptr_t)m_pEntity + 80) = Vector.Z;
 }
 
 void CEntity::GetTurnSpeedVector(PVECTOR Vector)
 {
-	Vector->X = m_pEntity->vecTurnSpeed.X;
-	Vector->Y = m_pEntity->vecTurnSpeed.Y;
-	Vector->Z = m_pEntity->vecTurnSpeed.Z;
+	Vector->X = *(float *)((uintptr_t)m_pEntity + 84);
+	Vector->Y = *(float *)((uintptr_t)m_pEntity + 88);
+	Vector->Z = *(float *)((uintptr_t)m_pEntity + 92);
 }
 
 void CEntity::SetTurnSpeedVector(VECTOR Vector)
 {
-	m_pEntity->vecTurnSpeed.X = Vector.X;
-	m_pEntity->vecTurnSpeed.Y = Vector.Y;
-	m_pEntity->vecTurnSpeed.Z = Vector.Z;
+	*(float *)((uintptr_t)m_pEntity + 84) = Vector.X;
+	*(float *)((uintptr_t)m_pEntity + 88) = Vector.Y;
+	*(float *)((uintptr_t)m_pEntity + 92) = Vector.Z;
 }
 
 // 0.3.7
@@ -121,7 +135,10 @@ bool CEntity::SetModelIndex(unsigned int uiModel)
 			usleep(1000);
 			if(iTryCount > 200)
 			{
-				if(pChatWindow) pChatWindow->AddDebugMessage("Warning: Model %u wouldn't load in time!", uiModel);
+				if(pChatWindow) {
+					pChatWindow->AddDebugMessage("Warning: Model %u wouldn't load in time!", uiModel);
+				}
+
 				return false;
 			}
 
@@ -132,7 +149,7 @@ bool CEntity::SetModelIndex(unsigned int uiModel)
 	// CEntity::DeleteRWObject()
 	(( void (*)(ENTITY_TYPE*))(*(void**)(m_pEntity->vtable+0x24)))(m_pEntity);
 	m_pEntity->nModelIndex = uiModel;
-	
+
 	// CEntity::SetModelIndex()
 	(( void (*)(ENTITY_TYPE*, unsigned int))(*(void**)(m_pEntity->vtable+0x18)))(m_pEntity, uiModel);
 

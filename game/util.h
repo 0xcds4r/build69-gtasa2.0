@@ -27,3 +27,5 @@ void SetScissorRect(void* pRect);
 float DegToRad(float fDegrees);
 // 0.3.7
 float FloatOffset(float f1, float f2);
+
+bool GetModelInfoById(int iModel);

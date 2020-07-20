@@ -110,20 +110,13 @@ CObject *CGame::NewObject(int iModel, float fPosX, float fPosY, float fPosZ, VEC
 
 uint32_t CGame::CreatePickup(int iModel, int iType, float fX, float fY, float fZ, int* unk)
 {
+	if(!GetModelInfoById(iModel)) {
+		iModel = 18631;
+	}
+
 	FLog("CreatePickup(%d, %d, %4.f, %4.f, %4.f)", iModel, iType, fX, fY, fZ);
 
 	uint32_t hnd;
-
-	if(iModel > 0 && iModel < 20000)
-	{
-		uintptr_t *dwModelArray = (uintptr_t*)(g_GTASAAdr+0x91DCB8);
-    	if(dwModelArray[iModel] == 0) {
-    		iModel = 18631;
-    	}
-	}
-	else {
-		iModel = 18631;
-	}
 
 	if(!ScriptCommand(&is_model_available, iModel))
 	{
@@ -137,9 +130,10 @@ uint32_t CGame::CreatePickup(int iModel, int iType, float fX, float fY, float fZ
 
 	ScriptCommand(&create_pickup, iModel, iType, fX, fY, fZ, &hnd);
 
-	int lol = 32 * (uint16_t)hnd;
-	if(lol) lol /= 32;
-	if(unk) *unk = lol;
+	int lol = 32 * hnd & 0x1FFFE0;
+	if(lol) lol >>= 5;
+	
+	*unk = lol;
 
 	return hnd;
 }

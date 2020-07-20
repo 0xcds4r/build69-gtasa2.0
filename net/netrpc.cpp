@@ -624,7 +624,7 @@ void Pickup(RPCParameters *rpcParams)
 	bsData.Read((char*)&Pickup, sizeof (PICKUP));
 
 	CPickupPool *pPickupPool = pNetGame->GetPickupPool();
-	// if (pPickupPool) pPickupPool->New(&Pickup, iIndex);
+	if (pPickupPool) pPickupPool->New(&Pickup, iIndex);
 }
 
 void DestroyPickup(RPCParameters *rpcParams)
@@ -640,7 +640,7 @@ void DestroyPickup(RPCParameters *rpcParams)
 	bsData.Read(iIndex);
 
 	CPickupPool *pPickupPool = pNetGame->GetPickupPool();
-	// if (pPickupPool) pPickupPool->Destroy(iIndex);
+	if (pPickupPool) pPickupPool->Destroy(iIndex);
 }
 
 void Create3DTextLabel(RPCParameters *rpcParams)

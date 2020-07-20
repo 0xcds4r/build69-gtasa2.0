@@ -1,6 +1,6 @@
 #pragma once
 
-#define PLAYER_PED_SLOTS	120
+#define PLAYER_PED_SLOTS	210
 
 typedef unsigned short VEHICLEID;
 typedef unsigned short PLAYERID;

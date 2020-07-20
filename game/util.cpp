@@ -169,3 +169,18 @@ float FloatOffset(float f1, float f2)
     if(f1 >= f2) return f1 - f2;
     else return (f2 - f1);
 }
+
+bool GetModelInfoById(int iModel)
+{
+	uintptr_t *dwModelArray = (uintptr_t*)(g_GTASAAdr+0x91DCB8);
+
+	if(iModel < 0 || iModel > 20000) {
+		return false;
+	}
+
+	if(dwModelArray[iModel] == 0) {
+    	return false;
+    }
+
+    return true;
+}
