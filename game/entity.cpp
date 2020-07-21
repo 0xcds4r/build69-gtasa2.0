@@ -100,7 +100,7 @@ void CEntity::SetTurnSpeedVector(VECTOR Vector)
 // 0.3.7
 uint16_t CEntity::GetModelIndex()
 {
-	return m_pEntity->nModelIndex;
+	return *(uint16_t*)((uintptr_t)m_pEntity + 0x26);
 }
 
 // 0.3.7
@@ -110,10 +110,6 @@ bool CEntity::IsAdded()
 	{
 		if(m_pEntity->vtable == g_GTASAAdr+0x667D24) {
 			return false;
-		}
-
-		if(m_pEntity->dwUnkModelRel) {
-			return true;
 		}
 	}
 
@@ -148,7 +144,7 @@ bool CEntity::SetModelIndex(unsigned int uiModel)
 
 	// CEntity::DeleteRWObject()
 	(( void (*)(ENTITY_TYPE*))(*(void**)(m_pEntity->vtable+0x24)))(m_pEntity);
-	m_pEntity->nModelIndex = uiModel;
+	*(uint16_t*)((uintptr_t)m_pEntity + 0x26) = uiModel;
 
 	// CEntity::SetModelIndex()
 	(( void (*)(ENTITY_TYPE*, unsigned int))(*(void**)(m_pEntity->vtable+0x18)))(m_pEntity, uiModel);
@@ -161,7 +157,7 @@ void CEntity::TeleportTo(float fX, float fY, float fZ)
 {
 	if(m_pEntity && m_pEntity->vtable != (g_GTASAAdr+0x667D24)) /* CPlaceable */
 	{
-		uint16_t modelIndex = m_pEntity->nModelIndex;
+		uint16_t modelIndex = *(uint16_t*)((uintptr_t)m_pEntity + 0x26);
 		if(	modelIndex != TRAIN_PASSENGER_LOCO &&
 			modelIndex != TRAIN_FREIGHT_LOCO &&
 			modelIndex != TRAIN_TRAM)
@@ -175,8 +171,9 @@ float CEntity::GetDistanceFromCamera()
 {
 	MATRIX4X4 matEnt;
 
-	if(!m_pEntity || m_pEntity->vtable == g_GTASAAdr+0x667D24 /* CPlaceable */)
+	if(!m_pEntity || m_pEntity->vtable == g_GTASAAdr+0x667D24 /* CPlaceable */) {
 		return 100000.0f;
+	}
 
 	this->GetMatrix(&matEnt);
 	

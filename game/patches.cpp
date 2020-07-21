@@ -11,9 +11,35 @@ struct _ATOMIC_MODEL
 };
 struct _ATOMIC_MODEL *ATOMIC_MODELS;
 
+void ApplyRadarPatches()
+{
+    FLog("ApplyRadarPatches");
+
+    // CRadar::Draw3dMarkers
+    ARMHook::writeMemory(g_GTASAAdr + 0x4420D0, (uintptr_t)"\x2C\xE0", 2); 
+
+    // CRadar::Draw3dMarkers
+    ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); 
+      
+    // CRadar::DrawCoordBlip
+    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); 
+
+    // CRadar::Draw3dMarkers
+    ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); 
+    
+    // CRadar::DrawCoordBlip
+    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); 
+    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); 
+}
+
 void ApplyGlobalPatches()
 {
-	  FLog("ApplyGlobalPatches");
+	FLog("ApplyGlobalPatches");
 
     PLAYERS_REALLOC = (( char* (*)(int))(g_GTASAAdr + 0x198A70))(404*1004);
     ARMHook::unprotect(g_GTASAAdr + 0x6783C8);
@@ -57,7 +83,7 @@ void ApplyGlobalPatches()
   	// CAudioEngine::StartLoadingTune
   	ARMHook::makeNOP(g_GTASAAdr + 0x5E4916, 2);
 	 
-    // ~
+    // Tasks
   	ARMHook::makeRET(g_GTASAAdr + 0x3976AC);	// CAEGlobalWeaponAudioEntity::ServiceAmbientGunFire
   	ARMHook::makeRET(g_GTASAAdr + 0x4211A0);	// CPlaceName::Process
   	ARMHook::makeRET(g_GTASAAdr + 0x538C8C);	// CTaskSimplePlayerOnFoot::PlayIdleAnimations
@@ -66,7 +92,7 @@ void ApplyGlobalPatches()
     // generator
     ARMHook::makeRET(g_GTASAAdr + 0x56E350);  // CTheCarGenerators::Process
     ARMHook::makeRET(g_GTASAAdr + 0x4CF26C);  // CPopulation::AddPed
-  	ARMHook::makeRET(g_GTASAAdr + 0x2E82CC);	// CCarCtrl::GenerateRandomCars
+  	ARMHook::makeRET(g_GTASAAdr + 0x2E82CC);  // CCarCtrl::GenerateRandomCars
     ARMHook::makeRET(g_GTASAAdr + 0x579214);  // CPlane::DoPlaneGenerationAndRemoval
     ARMHook::makeRET(g_GTASAAdr + 0x46B548);  // CFileLoader::LoadPickup
     ARMHook::makeRET(g_GTASAAdr + 0x306EC0);  // CEntryExit::GenerateAmbientPeds
@@ -79,7 +105,7 @@ void ApplyGlobalPatches()
     // shadow patch
   	ARMHook::makeNOP(g_GTASAAdr + 0x3FCD34, 2);	   // ReturnRealTimeShadow
   	ARMHook::makeNOP(g_GTASAAdr + 0x3FCD74, 2);	  // ReturnRealTimeShadow
-  	ARMHook::makeRET(g_GTASAAdr + 0x5B83FC);	   // CRealTimeShadowManager::Update
+  	ARMHook::makeRET(g_GTASAAdr + 0x5B83FC);	 // CRealTimeShadowManager::Update
 
     // interior patch
     ARMHook::makeRET(g_GTASAAdr + 0x445E98); // Interior_c::AddPickups
@@ -99,68 +125,49 @@ void ApplyGlobalPatches()
     ARMHook::unprotect(g_GTASAAdr+0x6B0130);
     memcpy((void*)(g_GTASAAdr+0x6B0130), "GTASAMP", 8);
 
+    // _rwOpenGLRasterCreate
+    ARMHook::writeMemory(g_GTASAAdr + 0x1AE95E, (uintptr_t)"\x01\x22", 2);
+
+    // CVehicleModelInfo::SetupCommonData ~ Increase matrix
+    ARMHook::writeMemory(g_GTASAAdr + 0x468B7E, (uintptr_t)"\x4F\xF4\x00\x30", 4);
+    ARMHook::writeMemory(g_GTASAAdr + 0x468B88, (uintptr_t)"\xF7\x20", 2);
+    ARMHook::writeMemory(g_GTASAAdr + 0x468B8A, (uintptr_t)"\xF7\x25", 2);
+    ARMHook::writeMemory(g_GTASAAdr + 0x468BCC, (uintptr_t)"\xF7\x28", 2);
+
+    // CPlayerPed Task Patch
+    ARMHook::writeMemory(g_GTASAAdr + 0x4C3673, (uintptr_t)"\xB3", 1);
+
+    // CPlayerPed::ProcessAnimGroups
+    ARMHook::makeNOP(g_GTASAAdr + 0x4C5EFA, 2);
+
+    // CBike::ProcessAI
+    ARMHook::makeNOP(g_GTASAAdr + 0x564CC0, 1); 
+
+    // Vehicle Process Patch 
+    ARMHook::makeNOP(g_GTASAAdr + 0x553E26, 2);
+    ARMHook::makeNOP(g_GTASAAdr + 0x561A52, 2);
+    ARMHook::makeNOP(g_GTASAAdr + 0x56BE64, 2);
+    ARMHook::makeNOP(g_GTASAAdr + 0x57D054, 2);
+
+    // CTaskComplexEnterCarAsDriver
+    ARMHook::writeMemory(g_GTASAAdr + 0x40AC28, (uintptr_t)"\x8F\xF5\x3A\xEF", 4);    
+
+    // CTaskComplexEnterCarAsDriver from ~CPlayerInfo::Process
+    ARMHook::makeNOP(g_GTASAAdr + 0x40AC30, 2); 
+
     // FPS
-    ARMHook::writeMemory(g_GTASAAdr + 0x5E4978, (uintptr_t)"\x64", 1); // \x64
-    ARMHook::writeMemory(g_GTASAAdr + 0x5E4990, (uintptr_t)"\x64", 1); // \x64
+    ARMHook::writeMemory(g_GTASAAdr + 0x5E4978, (uintptr_t)"\x3C", 1);
+    ARMHook::writeMemory(g_GTASAAdr + 0x5E4990, (uintptr_t)"\x3C", 1);
+    ARMHook::writeMemory(g_GTASAAdr + 0x9FC908, (uintptr_t)"\x3C", 1);
+    ARMHook::writeMemory(g_GTASAAdr + 0x679118, (uintptr_t)"\x3C", 1);
 
     // CStreaming::ms_memoryAvailable patch
     ARMHook::unprotect(g_GTASAAdr+0x46BE0A);
     *(uintptr_t*)(g_GTASAAdr+0x46BE0A) = 0x10000000;
     ARMHook::unprotect(g_GTASAAdr+0x46BE10);
     *(uintptr_t*)(g_GTASAAdr+0x46BE10) = 0x10000000;
-
-    // Draw distance hack
-    ARMHook::unprotect(g_GTASAAdr+0x41F300);
-    *(uint32_t *)(g_GTASAAdr+0x41F300) = 0x41C80000;
-    ARMHook::unprotect(g_GTASAAdr+0x41FF6C);
-    *(uint32_t *)(g_GTASAAdr+0x41FF6C) = 0x40A00000;
-
-    // _rwOpenGLRasterCreate
-    ARMHook::writeMemory(g_GTASAAdr + 0x1AE95E, (uintptr_t)"\x01\x22", 2);
-
-    // CVehicleModelInfo::SetupCommonData ~ Increase matrix
-    ARMHook::writeMemory(g_GTASAAdr + 0x468B7E, (uintptr_t)"\x4F\xF4\x00\x30", 4);// \x4F\xF4\x00\x30
-    ARMHook::writeMemory(g_GTASAAdr + 0x468B88, (uintptr_t)"\xF7\x20", 2); // \xF7\x20
-    ARMHook::writeMemory(g_GTASAAdr + 0x468B8A, (uintptr_t)"\xF7\x25", 2); // \xF7\x25
-    ARMHook::writeMemory(g_GTASAAdr + 0x468BCC, (uintptr_t)"\xF7\x28", 2); // \xF7\x28
-
-    // CRadar::Draw3dMarkers
-    /*ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); // \x30\x46
-    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); // \x3A\xE0 
-    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); // \x30\x46
-      
-    // CRadar::DrawCoordBlip
-    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); // \x48\x46 
-    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); // \x00\x21
-
-    // CTaskComplexEnterCarAsDriver
-    ARMHook::writeMemory(g_GTASAAdr + 0x40AC28, (uintptr_t)"\x8F\xF5\x3A\xEF", 4); // \x8F\xF5\x3A\xEF
-
-    // CRadar::Draw3dMarkers
-    ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); // \x30\x46
-    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); // \x3A\xE0 
-    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); // \x30\x46
-    
-    // CRadar::DrawCoordBlip
-    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); // \x48\x46 
-    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); // \x00\x21*/
-
-    // CPlayerPed Task Patch
-    ARMHook::writeMemory(g_GTASAAdr + 0x4C3673, (uintptr_t)"\xB3", 1); // \xB3
-
-    // CPlayerPed::ProcessAnimGroups
-    ARMHook::makeNOP(g_GTASAAdr + 0x4C5EFA, 2); // fps ok
-
-    // CBike::ProcessAI
-    ARMHook::makeNOP(g_GTASAAdr + 0x564CC0, 1); // fps ok
-    /*
-    old method:
-    ARMHook::unprotect(g_libGTASA+0x4EE200);
-    *(uint8_t*)(g_libGTASA+0x4EE200) = 0x9B;
-    */
-
-    // CTaskComplexEnterCarAsDriver from ~CPlayerInfo::Process
-    ARMHook::makeNOP(g_GTASAAdr + 0x40AC30, 2); // fps ok
+    ARMHook::unprotect(g_GTASAAdr+0x685FA0);
+    *(uintptr_t*)(g_GTASAAdr+0x685FA0) = 0x10000000;
 }
 
 void ApplySCAndPatches()
@@ -168,17 +175,23 @@ void ApplySCAndPatches()
 	FLog("ApplySCAndPatches");
 
 	// SocialClub Patch #1
-  ARMHook::unprotect(g_SCANDAdr+0x31C149);
-  *(bool*)(g_SCANDAdr+0x31C149) = true;
+    ARMHook::unprotect(g_SCANDAdr+0x31C149);
+    *(bool*)(g_SCANDAdr+0x31C149) = true;
 }
 
 void ApplySAMPPatchesInGame()
 {
 	FLog("ApplySAMPPatchesInGame");
 
-  // CTheZones::ZonesVisited[100]
+    // CTheZones::ZonesVisited[100]
 	memset((void*)(g_GTASAAdr + 0x98D252), 1, 100);
 
 	// CTheZones::ZonesRevealed
 	*(uint32_t*)(g_GTASAAdr + 0x98D2B8) = 100;
+
+    // Draw distance hack (LAGS?)
+    ARMHook::unprotect(g_GTASAAdr+0x41F300);
+    *(uint32_t *)(g_GTASAAdr+0x41F300) = 0x41C80000;
+    ARMHook::unprotect(g_GTASAAdr+0x41FF6C);
+    *(uint32_t *)(g_GTASAAdr+0x41FF6C) = 0x40A00000;
 }

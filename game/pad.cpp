@@ -345,6 +345,100 @@ void CPed__ProcessControl_Hook(uintptr_t thiz)
 	return;
 }
 
+void ProcessControl(VEHICLE_TYPE* pVehicle, uintptr_t call_addr)
+{
+	uintptr_t pVehiclePtr = (uintptr_t)pVehicle;
+
+	if(!pVehiclePtr) {
+		return;
+	}
+
+	uintptr_t pDriver = *(uintptr_t *)(pVehiclePtr + 0x464);
+	uintptr_t pTemp = *(uintptr_t *)(pVehiclePtr + 1124); 
+
+	// FLog("ProcessControl pDriver = 0x%x | pTemp = 0x%x", pDriver, pTemp);
+
+	if(pVehicle && pDriver) {
+		byteCurDriver = FindPlayerNumFromPedPtr(pDriver);
+	}
+
+	if( pDriver && *(uint32_t *)(pTemp + 1436) == 0 &&
+		pDriver != (uintptr_t)GamePool_FindPlayerPed() && 
+		*(uint8_t*)(g_GTASAAdr+0x96B9C4) == 0) // 96B9C4 ; CWorld::PlayerInFocus
+	{
+		*(uint8_t*)(g_GTASAAdr+0x96B9C4) = 0;
+
+		*(uint32_t *)(pTemp + 1436) = 4;
+
+		// CAEVehicleAudioEntity::Service
+		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(pVehiclePtr+0x13C); // 0x3ACDB5 thiz + 0x13C
+
+		*(uint32_t *)(pTemp + 1436) = 0;
+	} 
+	else
+	{
+		// CAEVehicleAudioEntity::Service
+		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(pVehiclePtr+0x13C); // 0x3ACDB5 thiz + 0x13C
+	}
+
+	/* -------------------------- adjust address -------------------------- */
+	// protection or dolboebizm? YES!
+
+	// CAutomobile
+    if(call_addr == 0x553DD5)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x553DD4+1))(pVehicle);
+    }
+
+    // CBoat
+    if(call_addr == 0x56BE51)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x56BE50+1))(pVehicle);
+    }
+
+    // CBike
+    if(call_addr == 0x561A21)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x561A20+1))(pVehicle);
+    }
+
+    // CPlane
+    if(call_addr == 0x575C88)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x575C88+1))(pVehicle);
+    }
+
+    // CHeli
+    if(call_addr == 0x571238)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x571238+1))(pVehicle);
+    }
+
+    // CBmx
+    if(call_addr == 0x568B15)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x568B14+1))(pVehicle);
+    }
+
+    // CMonsterTruck
+    if(call_addr == 0x5747F4)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x5747F4+1))(pVehicle);
+    }
+
+    // CQuadBike
+    if(call_addr == 0x57A280)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x57A280+1))(pVehicle);
+    }
+
+    // CTrain
+    if(call_addr == 0x57D030)
+    {
+    	(( void (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x57D030+1))(pVehicle);
+    }
+}
+
 void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
 {
 	VEHICLE_TYPE *pVehicle = (VEHICLE_TYPE*)thiz;
@@ -352,6 +446,8 @@ void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
 	this_vtable -= g_GTASAAdr;
 
 	uintptr_t call_addr = 0;
+
+	// FLog("AllVehicles__ProcessControl_Hook: this_vtable = 0x%x", this_vtable);
 
 	switch(this_vtable)
 	{
@@ -371,7 +467,7 @@ void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
 		break;
 
 		// CPlane
-		case 0x66DD94:
+		case 0x66DD94: 
 		call_addr = 0x575C88; // +
 		break;
 
@@ -381,7 +477,7 @@ void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
 		break;
 
 		// CBmx
-		case 0x66D918:
+		case 0x66D918: // ?
 		call_addr = 0x568B15; // +
 		break;
 
@@ -396,36 +492,12 @@ void AllVehicles__ProcessControl_Hook(uintptr_t thiz)
 		break;
 
 		// CTrain
-		case 0x66E10C: 
+		case 0x66E10C:
 		call_addr = 0x57D030; // +
 		break;
 	}
 
-	if(pVehicle && *(uintptr_t *)(thiz + 0x464))
-	{
-		byteCurDriver = FindPlayerNumFromPedPtr(*(uintptr_t *)(thiz + 0x464));
-	}
-
-	/*if(*(uint32_t *)(thiz + 0x464) && *(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) == 0 &&
-		*(PED_TYPE**)(thiz + 0x464) != GamePool_FindPlayerPed() && 
-		*(uint8_t*)(g_GTASAAdr+0x96B9C4) == 0) // 96B9C4 ; CWorld::PlayerInFocus
-	{
-		*(uint8_t*)(g_GTASAAdr+0x96B9C4) = 0;
-
-		*(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) = 4;
-
-		// CAEVehicleAudioEntity::Service
-		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
-
-		*(uint32_t *)(*(uint32_t *)(thiz + 1124) + 1436) = 0;
-	}
-	else
-	{
-		(( void (*)(uintptr_t))(g_GTASAAdr+0x3ACDB5))(thiz+0x13C); // 0x3ACDB5 thiz + 0x13C
-	}*/
-
-	// VEHTYPE::ProcessControl()
-    (( void (*)(uintptr_t))(g_GTASAAdr+call_addr+1))(*(uintptr_t *)(thiz + 0x464));
+	ProcessControl(pVehicle, call_addr);
 }
 
 void HookCPad()

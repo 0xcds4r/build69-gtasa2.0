@@ -42,12 +42,12 @@ CVehicle::CVehicle(int iType, float fPosX, float fPosY, float fPosZ, float fRota
 		ScriptCommand(&toggle_car_tires_vulnerable, dwRetID, 0);
 
 		m_pVehicle = (VEHICLE_TYPE*)GamePool_Vehicle_GetAt(dwRetID);
-		m_pEntity = (ENTITY_TYPE*)m_pVehicle;
+		m_pEntity = (ENTITY_TYPE*)GamePool_Vehicle_GetAt(dwRetID);
 		m_dwGTAId = dwRetID;
 
 		if(m_pVehicle)
 		{
-			m_pVehicle->dwDoorsLocked = 0;
+			// *(uint8_t *)((*(uintptr_t *)((uintptr_t)m_pVehicle + 0xC)) + 0x508) = 0;
 			m_bIsLocked = false;
 
 			GetMatrix(&mat);
@@ -60,7 +60,6 @@ CVehicle::CVehicle(int iType, float fPosX, float fPosY, float fPosZ, float fRota
 			{
 				mat.pos.Z += 0.25f;
 			}
-				
 
 			SetMatrix(mat);
 		}
@@ -85,7 +84,8 @@ CVehicle::CVehicle(int iType, float fPosX, float fPosY, float fPosZ, float fRota
 }
 
 CVehicle::~CVehicle()
-{
+{	
+	FLog("~CVehicle");
 	m_pVehicle = GamePool_Vehicle_GetAt(m_dwGTAId);
 
 	if(m_pVehicle)
@@ -96,7 +96,9 @@ CVehicle::~CVehicle()
 			m_dwMarkerID = 0;
 		}
 
-		RemoveEveryoneFromVehicle();
+		// FLog("~CVehicle : RemoveEveryoneFromVehicle");
+		// RemoveEveryoneFromVehicle(); // todo: fix
+		// FLog("~CVehicle : RemoveEveryoneFromVehicle ok");
 
 		if(m_pTrailer)
 		{
@@ -105,24 +107,28 @@ CVehicle::~CVehicle()
 
 		// тут еще какая-то интересная шняга
 
-		if( m_pVehicle->entity.nModelIndex == TRAIN_PASSENGER_LOCO ||
-			m_pVehicle->entity.nModelIndex == TRAIN_FREIGHT_LOCO )
+		// FLog("~CVehicle : RemoveEveryoneFromVehicle nModelIndex", *(uint16_t*)((uintptr_t)m_pEntity + 0x26));
+		if( *(uint16_t*)((uintptr_t)m_pEntity + 0x26) == TRAIN_PASSENGER_LOCO ||
+			*(uint16_t*)((uintptr_t)m_pEntity + 0x26) == TRAIN_FREIGHT_LOCO )
 		{
+			// FLog("~CVehicle #1");
 			ScriptCommand(&destroy_train, m_dwGTAId);
+			// FLog("~CVehicle #1 ok");
 		}
 		else
 		{
-			int nModelIndex = m_pVehicle->entity.nModelIndex;
+			// FLog("~CVehicle #2");
+
+			int nModelIndex = *(uint16_t*)((uintptr_t)m_pEntity + 0x26);
 			ScriptCommand(&destroy_car, m_dwGTAId);
 
 			if( !GetModelReferenceCount(nModelIndex) &&
-				//!m_bKeepModelLoaded &&
-				//(pGame->GetVehicleModelsCount() > 80) &&
 				pGame->IsModelLoaded(nModelIndex))
 			{
-				// CStreaming::RemoveModel(int) .text 002D00B8 0000038A 00000028 00000000 R . . . B T .
-				(( void (*)(int))(g_GTASAAdr+0x2D00B8+1))(nModelIndex);
+				pGame->RemoveModel(nModelIndex, 1);
 			}
+
+			// FLog("~CVehicle #2 ok");
 		}
 	}
 }
@@ -210,23 +216,46 @@ void CVehicle::RemoveEveryoneFromVehicle()
 	if(!m_pVehicle) return;
 	if(!GamePool_Vehicle_GetAt(m_dwGTAId)) return;
 
-	float fPosX = m_pVehicle->entity.mat->pos.X;
-	float fPosY = m_pVehicle->entity.mat->pos.Y;
-	float fPosZ = m_pVehicle->entity.mat->pos.Z;
+	ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&m_pVehicle->entity;
+	if(!g_pEntity) {
+		return;
+	}
+
+	MATRIX4X4* mat = *(MATRIX4X4**)((uintptr_t)g_pEntity + 20);
+
+	float fPosX = mat->pos.X;
+	float fPosY = mat->pos.Y;
+	float fPosZ = mat->pos.Z;
 
 	int iPlayerID = 0;
-	if(*(uintptr_t*)((uintptr_t)m_pVehicle + 0x464))
+
+	// FLog("CVehicle::RemoveEveryoneFromVehicle");
+	if(m_pVehicle->pDriver)
 	{
-		iPlayerID = GamePool_Ped_GetIndex( *(PED_TYPE**)((uintptr_t)m_pVehicle + 0x464) );
-		ScriptCommand(&remove_actor_from_car_and_put_at, iPlayerID, fPosX, fPosY, fPosZ + 2.0f);
+		// FLog("CVehicle::RemoveEveryoneFromVehicle DRIVER");
+
+		iPlayerID = GamePool_Ped_GetIndex(m_pVehicle->pDriver);
+		// FLog("#1 CVehicle::RemoveEveryoneFromVehicle iPlayerID = %d", iPlayerID);
+
+		if(iPlayerID < 0 || iPlayerID > MAX_PLAYERS)
+		{
+			ScriptCommand(&remove_actor_from_car_and_put_at, iPlayerID, fPosX, fPosY, fPosZ + 2.0f);
+		}
 	}
 
 	for(int i = 0; i<7; i++)
 	{
 		if(m_pVehicle->pPassengers[i] != nullptr)
 		{
+			// FLog("CVehicle::RemoveEveryoneFromVehicle PASSENGER");
+
 			iPlayerID = GamePool_Ped_GetIndex( m_pVehicle->pPassengers[i] );
-			ScriptCommand(&remove_actor_from_car_and_put_at, iPlayerID, fPosX, fPosY, fPosZ + 2.0f);
+			// FLog("#2 CVehicle::RemoveEveryoneFromVehicle iPlayerID = %d", iPlayerID);
+
+			if(iPlayerID < 0 || iPlayerID > MAX_PLAYERS)
+			{
+				ScriptCommand(&remove_actor_from_car_and_put_at, iPlayerID, fPosX, fPosY, fPosZ + 2.0f);
+			}	
 		}
 	}
 }
@@ -234,9 +263,11 @@ void CVehicle::RemoveEveryoneFromVehicle()
 // 0.3.7
 bool CVehicle::IsOccupied()
 {
+	if(!GamePool_Vehicle_GetAt(m_dwGTAId)) return false;
+
 	if(m_pVehicle)
 	{
-		if(*(uintptr_t*)((uintptr_t)m_pVehicle + 0x464)) return true;
+		if(m_pVehicle->pDriver) return true;
 		if(m_pVehicle->pPassengers[0]) return true;
 		if(m_pVehicle->pPassengers[1]) return true;
 		if(m_pVehicle->pPassengers[2]) return true;
@@ -309,20 +340,28 @@ void CVehicle::SetWheelPopped(uint8_t bytePopped)
 
 void CVehicle::SetDoorState(int iState)
 {
-	if(iState) 
+	if(!m_pVehicle) {
+		return;
+	}
+
+	/*if(iState) 
 	{
-		m_pVehicle->dwDoorsLocked = 2;
+		*(uint8_t *)((*(uintptr_t *)((uintptr_t)m_pVehicle + 0xC)) + 0x508) = 2;
 		m_bDoorsLocked = true;
 	} 
 	else 
 	{
-		m_pVehicle->dwDoorsLocked = 0;
+		*(uint8_t *)((*(uintptr_t *)((uintptr_t)m_pVehicle + 0xC)) + 0x508) = 0;
 		m_bDoorsLocked = false;
-	}
+	}*/
 }
 
 void CVehicle::SetEngineState(int iState)
 {
+	if(!m_pVehicle) {
+		return;
+	}
+
 	ScriptCommand(&turn_car_engine, m_dwGTAId, iState);
 }
 

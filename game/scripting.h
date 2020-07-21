@@ -111,3 +111,4 @@ const SCRIPT_COMMAND turn_off_car_engine				= { 0x02d4,	"i" };
 const SCRIPT_COMMAND turn_on_car_engine					= { 0x0abe,	"i" };
 const SCRIPT_COMMAND turn_car_engine 					= { 0x0918, "ii" };
 const SCRIPT_COMMAND attach_object_to_actor				= { 0x069b, "iiffffff" };
+const SCRIPT_COMMAND release_model 						= { 0x0249,	"i" };

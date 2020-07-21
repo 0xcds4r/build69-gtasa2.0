@@ -475,3 +475,24 @@ void CGame::DrawGangZone(float fPos[], uint32_t dwColor)
 {
    
 }
+
+void CGame::RemoveModel(int iModel, bool bFromStreaming)
+{
+	if (iModel >= 0 && iModel < 20000)
+	{
+		if (bFromStreaming)
+		{
+			if(ScriptCommand(&is_model_available, iModel)) 
+			{
+				// CStreaming::RemoveModel
+				((void(*)(int))(g_GTASAAdr + 0x2D00B9))(iModel);
+			}
+		}
+		else
+		{
+			if (ScriptCommand(&is_model_available, iModel)) {
+				ScriptCommand(&release_model, iModel);
+			}
+		}
+	}
+}

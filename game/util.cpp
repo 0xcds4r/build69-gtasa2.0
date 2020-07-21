@@ -7,37 +7,31 @@ uintptr_t dwPlayerPedPtrs[PLAYER_PED_SLOTS];
 
 extern char* PLAYERS_REALLOC;
 
-// 2.0
 PED_TYPE* GamePool_FindPlayerPed()
 {
 	return ((PED_TYPE*(*)(int))(g_GTASAAdr + 0x40B288 + 1))(-1);
 }
 
-// 2.0
 PED_TYPE* GamePool_Ped_GetAt(int iID)
 {
 	return (( PED_TYPE* (*)(int))(g_GTASAAdr+0x483D49))(iID);
 }
 
-// 2.0
 int GamePool_Ped_GetIndex(PED_TYPE *pActor)
 {
-    return (( int (*)(PED_TYPE*))(g_GTASAAdr+0x483D3B))(pActor);
+    return (( int (*)(uintptr_t))(g_GTASAAdr+0x483D3A+1))((uintptr_t)pActor);
 }
 
-// 2.0
 VEHICLE_TYPE *GamePool_Vehicle_GetAt(int iID)
 {
 	return (( VEHICLE_TYPE* (*)(int))(g_GTASAAdr+0x483D2F))(iID);
 }
 
-// 2.0
 int GamePool_Vehicle_GetIndex(VEHICLE_TYPE *pVehicle)
 {
     return (( int (*)(VEHICLE_TYPE*))(g_GTASAAdr+0x483D21))(pVehicle);
 }
 
-// 2.0
 ENTITY_TYPE *GamePool_Object_GetAt(int iID)
 {
 	ENTITY_TYPE* (*GetPoolObj)(int iID);
@@ -71,14 +65,17 @@ bool IsValidModel(unsigned int uiModelID)
     uintptr_t *dwModelArray = (uintptr_t*)(g_GTASAAdr+0x91DCB8);
 
     uintptr_t dwModelInfo = dwModelArray[uiModelID];
-    if(dwModelInfo && *(uintptr_t*)(dwModelInfo+0x34/*pRwObject*/))
+    if(dwModelInfo && *(uintptr_t*)(dwModelInfo+0x34/*pRwObject*/)) {
         return true;
+    }
 
     return false;
 }
 
 uint16_t GetModelReferenceCount(int nModelIndex)
 {
+	if(nModelIndex < 0 || nModelIndex > 20000) return 0;
+
 	uintptr_t *dwModelarray = (uintptr_t*)(g_GTASAAdr+0x91DCB8);
 	uint8_t *pModelInfoStart = (uint8_t*)dwModelarray[nModelIndex];
 	
@@ -109,7 +106,7 @@ uint8_t FindPlayerNumFromPedPtr(uintptr_t dwPedPtr)
 
 uintptr_t GetTexture(const char* texture)
 {
-	FLog("GetTexture: %s", texture);
+	// FLog("GetTexture: %s", texture);
 
 	// GetTexture
 	uintptr_t pRwTexture = (( uintptr_t (*)(const char*))(g_GTASAAdr+0x1E9CE5))(texture);
@@ -126,20 +123,22 @@ uintptr_t GetTexture(const char* texture)
 
 uintptr_t LoadTextureFromDB(const char* dbname, const char* texture)
 {
-	// TextureDatabaseRuntime::GetDatabase(dbname)
+	// TextureDatabaseRuntime::GetDatabase
 	uintptr_t db_handle = (( uintptr_t (*)(const char*))(g_GTASAAdr+0x1BF530+1))(dbname);
+
 	if(!db_handle)
 	{
 		FLog("Error: Database not found! (%s)", dbname);
 		return 0;
 	}
-	// TextureDatabaseRuntime::Register(TextureDatabaseRuntime*) .text 001E9BC8 0000009C 00000020 00000000 R . . . B T .
+	
+	// TextureDatabaseRuntime::Register
 	(( void (*)(uintptr_t))(g_GTASAAdr+0x1E9BC8+1))(db_handle);
 	uintptr_t tex = GetTexture(texture);
 
 	if(!tex) FLog("Error: Texture (%s) not found in database (%s)", dbname, texture);
 
-	// TextureDatabaseRuntime::Unregister(TextureDatabaseRuntime*) .text 001E9C80 00000058 00000008 FFFFFFF8 R . . . . T .
+	// TextureDatabaseRuntime::Unregister
 	(( void (*)(uintptr_t))(g_GTASAAdr+0x1E9C80+1))(db_handle);
 
 	return tex;

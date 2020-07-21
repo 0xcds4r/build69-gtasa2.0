@@ -116,10 +116,11 @@ bool CPlayerPed::IsAPassenger()
 	if(*(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590) && IsInVehicle())
 	{
 		VEHICLE_TYPE *pVehicle = *(VEHICLE_TYPE**)(m_pPed + 0x590);
+		ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&pVehicle->entity;
 
 		if(	*(PED_TYPE**)((uintptr_t)pVehicle + 0x464) != m_pPed ||
-			pVehicle->entity.nModelIndex == TRAIN_PASSENGER ||
-			pVehicle->entity.nModelIndex == TRAIN_FREIGHT )
+			*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_PASSENGER ||
+			*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_FREIGHT )
 			return true;
 	}
 
@@ -197,7 +198,7 @@ void CPlayerPed::PutDirectlyInVehicle(int iVehicleID, int iSeat)
 
 	VEHICLE_TYPE *pVehicle = GamePool_Vehicle_GetAt(iVehicleID);
 
-	if(pVehicle->fHealth == 0.0f) return;
+	if(*(float*)((uintptr_t)pVehicle + 0x4CC) == 0.0f) return;
 	if (pVehicle->entity.vtable == g_GTASAAdr+0x667D24) return;
 
 	if(iSeat == 0)
@@ -230,7 +231,8 @@ void CPlayerPed::EnterVehicle(int iVehicleID, bool bPassenger)
 
 	if(bPassenger)
 	{
-		if(ThisVehicleType->entity.nModelIndex == TRAIN_PASSENGER &&
+		ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&ThisVehicleType->entity;
+		if(*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_PASSENGER &&
 			(m_pPed == GamePool_FindPlayerPed()))
 		{
 			ScriptCommand(&put_actor_in_car2, m_dwGTAId, iVehicleID, -1);
@@ -260,8 +262,9 @@ void CPlayerPed::ExitCurrentVehicle()
 			ThisVehicleType = GamePool_Vehicle_GetAt(index);
 			if(ThisVehicleType)
 			{
-				if(	ThisVehicleType->entity.nModelIndex != TRAIN_PASSENGER &&
-					ThisVehicleType->entity.nModelIndex != TRAIN_PASSENGER_LOCO)
+				ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&ThisVehicleType->entity;
+				if(	*(uint16_t*)((uintptr_t)g_pEntity + 0x26) != TRAIN_PASSENGER &&
+					*(uint16_t*)((uintptr_t)g_pEntity + 0x26) != TRAIN_PASSENGER_LOCO)
 				{
 					ScriptCommand(&make_actor_leave_car, m_dwGTAId, GetCurrentVehicleID());
 				}
@@ -285,7 +288,7 @@ int CPlayerPed::GetVehicleSeatID()
 
 	if( GetActionTrigger() == ACTION_INCAR && (pVehicle = *(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590)) != 0 ) 
 	{
-		if(*(uintptr_t *)((uintptr_t)pVehicle + 0x464) == (uintptr_t)m_pPed) return 0;
+		if(pVehicle->pDriver == m_pPed) return 0;
 		if(pVehicle->pPassengers[0] == m_pPed) return 1;
 		if(pVehicle->pPassengers[1] == m_pPed) return 2;
 		if(pVehicle->pPassengers[2] == m_pPed) return 3;
@@ -351,6 +354,21 @@ void CPlayerPed::DestroyFollowPedTask()
 	// nothing
 }
 
+void CPlayerPed::GiveWeapon(int iWeaponID, int iAmmo)
+{
+	// nothing
+}
+
+void CPlayerPed::SetArmedWeapon(int iWeaponID)
+{
+	// nothing
+}
+
+uint8_t CPlayerPed::GetCurrentWeapon()
+{
+	// nothing
+}
+
 void CPlayerPed::ClearAllWeapons()
 {
 	// nothing
@@ -373,8 +391,8 @@ void CPlayerPed::ForceTargetRotation(float fRotation)
 	if(!m_pPed) return;
 	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
 
-	m_pPed->fRotation1 = DegToRad(fRotation);
-	m_pPed->fRotation2 = DegToRad(fRotation);
+	*(float*)((uintptr_t)m_pPed + 0x55C) = DegToRad(fRotation);
+	*(float*)((uintptr_t)m_pPed + 0x560) = DegToRad(fRotation);
 
 	ScriptCommand(&set_actor_z_angle, m_dwGTAId, fRotation);
 }
@@ -384,8 +402,8 @@ void CPlayerPed::SetRotation(float fRotation)
 	if(!m_pPed) return;
 	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
 
-	m_pPed->fRotation1 = DegToRad(fRotation);
-	m_pPed->fRotation2 = DegToRad(fRotation);
+	*(float*)((uintptr_t)m_pPed + 0x55C) = DegToRad(fRotation);
+	*(float*)((uintptr_t)m_pPed + 0x560) = DegToRad(fRotation);
 }
 
 // 0.3.7
@@ -497,27 +515,8 @@ void CPlayerPed::GetBonePosition(int iBoneID, VECTOR* vecOut)
 
 ENTITY_TYPE* CPlayerPed::GetEntityUnderPlayer()
 {
-	uintptr_t entity;
-	VECTOR vecStart;
-	VECTOR vecEnd;
-	char buf[100];
-
-	if(!m_pPed) return nullptr;
-	if(*(VEHICLE_TYPE**)(m_pPed + 0x590) || !GamePool_Ped_GetAt(m_dwGTAId)) {
-		return 0;
-	}
-
-	vecStart.X = m_pPed->entity.mat->pos.X;
-	vecStart.Y = m_pPed->entity.mat->pos.Y;
-	vecStart.Z = m_pPed->entity.mat->pos.Z - 0.25f;
-
-	vecEnd.X = m_pPed->entity.mat->pos.X;
-	vecEnd.Y = m_pPed->entity.mat->pos.Y;
-	vecEnd.Z = vecStart.Z - 1.75f;
-
-	LineOfSight(&vecStart, &vecEnd, (void*)buf, (uintptr_t)&entity, 0, 1, 0, 1, 0, 0, 0, 0);
-
-	return (ENTITY_TYPE*)entity;
+	// nothing
+	return 0;
 }
 
 uint16_t CPlayerPed::GetKeys(uint16_t *lrAnalog, uint16_t *udAnalog)

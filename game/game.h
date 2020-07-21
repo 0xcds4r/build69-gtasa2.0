@@ -111,6 +111,9 @@ public:
 
 	void DrawGangZone(float fPos[], uint32_t dwColor);
 
+	// 0.3.7
+	void RemoveModel(int iModel, bool bFromStreaming);
+
 private:
 	CCamera* 		m_pGameCamera;
 	CPlayerPed*		m_pGamePlayer;

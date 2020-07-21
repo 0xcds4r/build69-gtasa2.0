@@ -7,8 +7,6 @@ typedef unsigned short PLAYERID;
 
 #define PADDING(x,y) uint8_t x[y]
 
-#define IN_VEHICLE(x) ((x->dwStateFlags & 0x100) >> 8)
-
 //-----------------------------------------------------------
 
 #pragma pack(1)
@@ -32,78 +30,30 @@ typedef struct _MATRIX4X4
 
 //-----------------------------------------------------------
 
-// todo: rewrite for 2.0
 #pragma pack(1)
 typedef struct _ENTITY_TYPE
 {
 	// ENTITY STUFF
 	uint32_t vtable; 		// 0-4		;vtable
-	PADDING(_pad91, 16);	// 4-20
-	MATRIX4X4 *mat; 		// 20-24	;mat
-	PADDING(_pad92, 14);	// 24-38
-	uint16_t nModelIndex; 	// 38-40	;ModelIndex // 38
-	PADDING(_pad93, 32);	// 40-72
-	VECTOR vecMoveSpeed; 	// 72-74	;vecMoveSpeed
-	VECTOR vecTurnSpeed; 	// 74-76	;vecTurnSpeed
-	PADDING(_pad94, 88);	// 92-180
-	uintptr_t dwUnkModelRel; // 180-184 ;сотка инфа
 } ENTITY_TYPE;
 
 //-----------------------------------------------------------
 
-typedef struct
-{
-	char unk[0x14];
-	int iNodeId;
-} AnimBlendFrameData;
-
-// todo: rewrite for 2.0
 #pragma pack(1)
 typedef struct _PED_TYPE
 {
 	ENTITY_TYPE entity; 		// 0000-0184	;entity
-	PADDING(_pad106, 174);		// 0184-0358
-	uint32_t _pad107;			// 0358-0362	;dwPedType
-	PADDING(_pad101, 734);		// 0362-1096
-	uint32_t dwAction;			// 1096-1100	;Action
-	PADDING(_pad102, 36);		// 1100-1136
-	uintptr_t dwInvulFlags; 	// 1136-1140	0x1000 = can_decap
-	PADDING(_pad228, 8); 		// 1140-1148
-	uintptr_t Tasks; 			// 1148-1152
-	uint32_t dwStateFlags; 		// 1152-1156	;StateFlags
-	PADDING(_pad103, 12);		// 1156-1168
-	AnimBlendFrameData* aPedBones[19];	// 1168 - 1244
-	PADDING(_pad103_, 100);		// 1244-1344
-	float fHealth;		 		// 1344-1348	;Health
-	float fMaxHealth;			// 1348-1352	;MaxHealth
-	float fArmour;				// 1352-1356	;Armour
-	float fAim;
-	PADDING(_pad104, 8);		// 1356-1368
-	float fRotation1;			// 1368-1372	;Rotation1
-	float fRotation2;			// 1372-1376	;Rotation2
-	PADDING(_pad105, 44);		// 1376-1420
-	uint32_t pVehicle;			// 1420-1424	;pVehicle
-	PADDING(_pad108, 12);		// 1424-1436
-	uint32_t dwPedType;			// 1436-1440	;dwPedType
 } PED_TYPE;
 
 //-----------------------------------------------------------
 
-// todo: rewrite for 2.0
 #pragma pack(1)
 typedef struct _VEHICLE_TYPE
 {
 	ENTITY_TYPE entity;			// 0000-0184	;entity
-	PADDING(_pad201, 892);		// 0184-1076
-	uint8_t byteColor1;			// 1076-1077	;byteColor1
-	uint8_t byteColor2;			// 1077-1078	;byteColor2
-	PADDING(_pad204, 42);		// 1078-1120
-	PED_TYPE *pDriver;			// 1120-1124	;driver
-	PED_TYPE *pPassengers[7];	// 1124-1152	;pPassengers
-	PADDING(_pad202, 72);		// 1152-1224
-	float fHealth;				// 1224-1228	;fHealth
-	PADDING(_pad203, 56);		// 1228-1284
-	uint32_t dwDoorsLocked;		// 1284-1288	;dwDoorsLocked
+	PADDING(_pad228, 940);		// 0184-1124
+	PED_TYPE *pDriver;			// 1124-1128
+	PED_TYPE *pPassengers[7];	// 1128-...
 } VEHICLE_TYPE;
 
 //-----------------------------------------------------------

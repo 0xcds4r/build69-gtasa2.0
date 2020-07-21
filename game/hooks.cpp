@@ -54,6 +54,8 @@ stFile* NvFOpen__Hook(const char* r0, const char* r1, int r2, int r3)
 {
 	char path[0xFF] = { 0 };
 
+	// scm & img in apk
+
 	if (!strncmp(r1, "DATA/PEDS.IDE", 13))
 	{
 		sprintf(path, "%s/SAMP/peds.ide", (const char*)(g_GTASAAdr+0x6D687C));
@@ -90,6 +92,7 @@ open:
 	}
 }
 
+// bydlocode
 /*void (*CFileMgr__Initialise)(uintptr_t thiz);
 void CFileMgr__Initialise_Hook(uintptr_t thiz)
 {
@@ -107,6 +110,7 @@ void CStream__InitImageList_Hook()
 {
 	// FLog("CStream__InitImageList_Hook");
 
+	// fuck
 	ARMHook::unprotect(g_GTASAAdr + 0x792DA8);
 	ARMHook::unprotect(g_GTASAAdr + 0x792DA4);
 	ARMHook::unprotect(g_GTASAAdr + 0x792DD4);
@@ -350,109 +354,6 @@ void TouchEvent_Hook(int type, int num, int posX, int posY)
 	}
 }
 
-extern "C" bool NotifyEnterVehicle(uintptr_t _pVehicle)
-{
- 	if(!_pVehicle) {
- 		return false;
- 	}
-
- 	// todo
-
-    return true;
-}
-
-void (*CTaskComplexEnterCarAsDriver)(uint32_t thiz, uint32_t pVehicle);
-extern "C" void call_taskEnterCarAsDriver(uintptr_t a, uint32_t b)
-{
-	CTaskComplexEnterCarAsDriver(a, b);
-}
-
-void __attribute__((naked)) CTaskComplexEnterCarAsDriver_Hook(uint32_t thiz, uint32_t pVehicle)
-{
-	// todo: rewrite volatile to 2.0
-
-    __asm__ volatile("push {r0-r11, lr}\n\t"
-                    "mov r2, lr\n\t"
-                    "blx get_lib\n\t"
-                    "add r0, #0x3A0000\n\t"
-                    "add r0, #0xEE00\n\t"
-                    "add r0, #0xF7\n\t"
-                    "cmp r2, r0\n\t"
-                    "bne 1f\n\t" // !=
-                    "mov r0, r1\n\t"
-                    "blx NotifyEnterVehicle\n\t" // call NotifyEnterVehicle
-                    "1:\n\t"  // call orig
-                    "pop {r0-r11, lr}\n\t"
-    				"push {r0-r11, lr}\n\t"
-    				"blx call_taskEnterCarAsDriver\n\t"
-    				"pop {r0-r11, pc}");
-}
-
-uint32_t dwParam1, dwParam2;
-extern "C" void pickup_ololo()
-{
-	// 2.0
-	if(pNetGame && pNetGame->GetPickupPool())
-	{
-		CPickupPool *pPickups = pNetGame->GetPickupPool();
-		if(pPickups) {
-			pPickups->PickedUp( ((dwParam1-(g_GTASAAdr+0x7AFD70))/0x20) );
-		}
-	}
-}
-
-__attribute__((naked)) void PickupPickUp_Hook()
-{
-	//LOGI("PickupPickUp_hook");
-
-	// todo: rewrite volatile to 2.0
-	//  0x12AD9E, v9 + 0x31E08D
-
-	// calculate and save ret address
-	__asm__ volatile("push {lr}\n\t"
-					"push {r0}\n\t"
-					"blx get_lib\n\t"
-					"add r0, #0x2D0000\n\t"
-					"add r0, #0x009A00\n\t"
-					"add r0, #1\n\t"
-					"mov r1, r0\n\t"
-					"pop {r0}\n\t"
-					"pop {lr}\n\t"
-					"push {r1}\n\t");
-	
-	// 
-	__asm__ volatile("push {r0-r11, lr}\n\t"
-					"mov %0, r4" : "=r" (dwParam1));
-
-	__asm__ volatile("blx pickup_ololo\n\t");
-
-
-	__asm__ volatile("pop {r0-r11, lr}\n\t");
-
-	// restore
-	__asm__ volatile("ldrb r1, [r4, #0x1C]\n\t"
-					"sub.w r2, r1, #0xD\n\t"
-					"sub.w r2, r1, #8\n\t"
-					"cmp r1, #6\n\t"
-					"pop {pc}\n\t");
-}
-
-void (*CTaskComplexLeaveCar)(uintptr_t** thiz, uintptr_t pVehicle, int iTargetDoor, int iDelayTime, bool bSensibleLeaveCar, bool bForceGetOut);
-void CTaskComplexLeaveCar_Hook(uintptr_t** thiz, uintptr_t pVehicle, int iTargetDoor, int iDelayTime, bool bSensibleLeaveCar, bool bForceGetOut) 
-{
-	uintptr_t dwRetAddr = 0;
-	__asm__ volatile ("mov %0, lr" : "=r" (dwRetAddr));
-	dwRetAddr -= g_GTASAAdr;
-
-	// 2.0
-	if (dwRetAddr == 0x40A819 || dwRetAddr == 0x409A43) 
-	{
-		// todo
-	}
-
-	(*CTaskComplexLeaveCar)(thiz, pVehicle, iTargetDoor, iDelayTime, bSensibleLeaveCar, bForceGetOut);
-}
-
 void (*MainMenuScreen__Update)(uintptr_t thiz, float unk);
 void MainMenuScreen__Update_Hook(uintptr_t thiz, float unk)
 {
@@ -470,12 +371,109 @@ void InstallCrashFixHooks()
 	SetupGameHook(g_GTASAAdr + 0x5A60DC, (uintptr_t)CCustomRoadsignMgr__RenderRoadsignAtomic_Hook, (uintptr_t*)&CCustomRoadsignMgr__RenderRoadsignAtomic);
 }
 
-void (*CWidget__IsTouched)(uintptr_t thiz);
-void CWidget__IsTouched_Hook(uintptr_t thiz)
+extern "C" bool NotifyEnterVehicle(VEHICLE_TYPE *_pVehicle)
 {
-	FLog("CWidget__IsTouched: 0x%x", thiz);
-	if(pChatWindow) pChatWindow->AddDebugMessage("CWidget__IsTouched: 0x%x", thiz);
-	CWidget__IsTouched(thiz);
+    //Log("NotifyEnterVehicle");
+ 
+    if(!pNetGame) {
+    	return false;
+    } 
+    	
+    CVehiclePool *pVehiclePool = pNetGame->GetVehiclePool();
+    if(!pVehiclePool) {
+    	return false;
+    }
+ 
+    CVehicle *pVehicle = nullptr;
+    VEHICLEID VehicleID = pVehiclePool->FindIDFromGtaPtr(_pVehicle);
+ 
+    if(VehicleID <= 0 || VehicleID >= MAX_VEHICLES) {
+    	return false;
+    }
+
+    if(!pVehiclePool->GetSlotState(VehicleID)) {
+    	return false;
+    }
+
+    pVehicle = pVehiclePool->GetAt(VehicleID);
+    if(!pVehicle) {
+    	return false;
+    }
+
+    ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&pVehicle->m_pVehicle->entity;
+ 	if(!g_pEntity) {
+ 		return false;
+ 	}
+
+    if(*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_PASSENGER) {
+    	return false;
+    }
+ 
+ 	uintptr_t pTemp = *(uintptr_t *)((uintptr_t)pVehicle->m_pVehicle + 1124); 
+ 	uint32_t dwPedType = *(uint32_t *)(pTemp + 1436);
+
+    if(pVehicle->m_pVehicle->pDriver && dwPedType != 0) {
+        return false;
+    }
+ 
+    CLocalPlayer *pLocalPlayer = pNetGame->GetPlayerPool()->GetLocalPlayer();
+ 	
+ 	if(pLocalPlayer) {
+    	pLocalPlayer->SendEnterVehicleNotification(VehicleID, false);
+ 	}
+ 
+    return true;
+}
+
+void (*CTaskComplexEnterCarAsDriver)(uint32_t thiz, uint32_t pVehicle);
+extern "C" void call_taskEnterCarAsDriver(uintptr_t a, uint32_t b)
+{
+	CTaskComplexEnterCarAsDriver(a, b);
+}
+
+void __attribute__((naked)) CTaskComplexEnterCarAsDriver_hook(uint32_t thiz, uint32_t pVehicle)
+{
+	// todo: to 2.0
+    __asm__ volatile("");
+}
+
+void (*CTaskComplexLeaveCar)(uintptr_t** thiz, VEHICLE_TYPE *pVehicle, int iTargetDoor, int iDelayTime, bool bSensibleLeaveCar, bool bForceGetOut);
+void CTaskComplexLeaveCar_Hook(uintptr_t** thiz, VEHICLE_TYPE *pVehicle, int iTargetDoor, int iDelayTime, bool bSensibleLeaveCar, bool bForceGetOut) 
+{
+	uintptr_t dwRetAddr = 0;
+	__asm__ volatile ("mov %0, lr" : "=r" (dwRetAddr));
+	dwRetAddr -= g_GTASAAdr;
+
+	if(dwRetAddr == 0x40A819 || dwRetAddr == 0x409A43) 
+	{
+		if(pNetGame) 
+		{
+			if(*(uint32_t*)((uintptr_t)GamePool_FindPlayerPed() + 0x590) == (uint32_t)pVehicle) 
+			{
+				CVehiclePool *pVehiclePool = pNetGame->GetVehiclePool();
+				uint16_t VehicleID = pVehiclePool->FindIDFromGtaPtr(*(VEHICLE_TYPE**)((uintptr_t)GamePool_FindPlayerPed() + 0x590));
+				CLocalPlayer *pLocalPlayer = pNetGame->GetPlayerPool()->GetLocalPlayer();
+
+				if(pLocalPlayer) {
+					pLocalPlayer->SendExitVehicleNotification(VehicleID);
+				}
+			}
+		}
+	}
+ 
+ 	(*CTaskComplexLeaveCar)(thiz, pVehicle, iTargetDoor, iDelayTime, bSensibleLeaveCar, bForceGetOut);
+}
+
+int (*CTouchInterface__IsTouchDown)(uintptr_t thiz, uintptr_t touch);
+int CTouchInterface__IsTouchDown_Hook(uintptr_t thiz, uintptr_t touch)
+{
+	if(thiz == 1 && touch == 2)
+	{
+		// enter vehicle
+		// naaah. it's damn bullshit
+	}
+
+	return CTouchInterface__IsTouchDown(thiz, touch);
 }
 
 void InstallGlobalHooks()
@@ -491,7 +489,15 @@ void InstallGlobalHooks()
 	SetupGameHook(g_GTASAAdr + 0x3859E8, (uintptr_t)CModelInfo__AddAtomicModel_Hook, (uintptr_t*)&CModelInfo__AddAtomicModel);
 	SetupGameHook(g_GTASAAdr + 0x40C8B0, (uintptr_t)CPools__Initialise_Hook, (uintptr_t*)&CPools__Initialise);
 	SetupGameHook(g_GTASAAdr + 0x408AD0, (uintptr_t)CPlaceable__InitMatrixArray_Hook, (uintptr_t*)&CPlaceable__InitMatrixArray);
-	// SetupGameHook(g_GTASAAdr + 0x2B32B4, (uintptr_t)CWidget__IsTouched_Hook, (uintptr_t*)&CWidget__IsTouched);
+
+	// CTaskComplexEnterCarAsDriver
+	// SetupGameHook(g_GTASAAdr + 0x4F6F70, (uintptr_t)CTaskComplexEnterCarAsDriver_Hook, (uintptr_t*)&CTaskComplexEnterCarAsDriver);
+
+	// CTaskComplexLeaveCar::CTaskComplexLeaveCar
+	SetupGameHook(g_GTASAAdr + 0x4F8904, (uintptr_t)CTaskComplexLeaveCar_Hook, (uintptr_t*)&CTaskComplexLeaveCar);
+
+	// CTouchInterface__IsTouchDown
+	// SetupGameHook(g_GTASAAdr + 0x2B0A38, (uintptr_t)CTouchInterface__IsTouchDown_Hook, (uintptr_t*)&CTouchInterface__IsTouchDown);
 
 	InstallCrashFixHooks();
 	InstallSAMPHooks();
