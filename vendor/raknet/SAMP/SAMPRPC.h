@@ -136,3 +136,5 @@ extern int RPC_ScrCreate3DTextLabel;
 extern int RPC_ScrUpdate3DTextLabel;
 extern int RPC_ScrVehicleParamsEx;
 extern int RPC_ScrInterpolateCamera;
+
+extern int RPC_ScrSetPlayerAttachedObject;

@@ -142,3 +142,5 @@ int RPC_ScrUpdate3DTextLabel = 58;
 //int RPC_ScrDestroy3DTextLabel = 
 int RPC_ScrVehicleParamsEx = 24;
 int RPC_ScrInterpolateCamera = 82;
+
+int RPC_ScrSetPlayerAttachedObject = 113;
