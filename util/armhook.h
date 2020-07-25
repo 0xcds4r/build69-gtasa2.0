@@ -18,6 +18,5 @@ public:
 	static void installMethodHook(uintptr_t addr, uintptr_t func);
 	static void InjectCode(uintptr_t addr, uintptr_t func, int reg);
 	static void makeRET(uintptr_t addr);
-	static void installHook(uintptr_t addr, uintptr_t func, uintptr_t *orig, bool gta);
 	static void installPLTHook(uintptr_t addr, uintptr_t func, uintptr_t *orig);
 };

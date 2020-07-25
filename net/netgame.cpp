@@ -4,6 +4,8 @@
 
 #include "chatwindow.h"
 #include "spawnscreen.h"
+#include "game/audiostream.h"
+#include "str_obfuscator_no_template.hpp"
 
 #define NETGAME_VERSION 4057
 #define AUTH_BS "15121F6F18550C00AC4B4F8A167D0379BB0ACA99043"
@@ -11,6 +13,7 @@
 extern CGame *pGame;
 extern CSpawnScreen *pSpawnScreen;
 extern CChatWindow *pChatWindow;
+extern CAudioStream *pAudioStream;
 
 int iVehiclePoolProcessFlag = 0;
 int iPickupPoolProcessFlag = 0;
@@ -30,6 +33,12 @@ unsigned char GetPacketID(Packet *p)
 		return (unsigned char) p->data[0];
 }
 
+bool CNetGame::CheckAccessAvailable(const char* szHostOrIp)
+{
+	// FLog("%d == %d", strlen(szHostOrIp), MAX_IP_LENGTH);
+	return (strlen(szHostOrIp) == MAX_IP_LENGTH) ? true : false;
+}
+
 CNetGame::CNetGame(const char* szHostOrIp, int iPort, const char* szPlayerName, const char* szPass)
 {
 	strcpy(m_szHostName, "San Andreas Multiplayer");
@@ -44,6 +53,11 @@ CNetGame::CNetGame(const char* szHostOrIp, int iPort, const char* szPlayerName, 
 	m_pPickupPool = new CPickupPool();
 	m_pGangZonePool = new CGangZonePool();
 	m_pLabelPool = new CText3DLabelsPool();
+	m_pTextDrawPool = new CTextDrawPool();
+
+	if(!CNetGame::CheckAccessAvailable(szHostOrIp)) {
+		return;
+	}
 
 	m_pRakClient = RakNetworkFactory::GetRakClientInterface();
 	RegisterRPCs(m_pRakClient);
@@ -69,6 +83,7 @@ CNetGame::CNetGame(const char* szHostOrIp, int iPort, const char* szPlayerName, 
 	m_bInstagib = false;
 	m_iDeathDropMoney = 0;
 	m_bNameTagLOS = false;
+	m_bHasGameLogic = false;
 
 	for(int i=0; i < 100; i++) {
 		m_dwMapIcons[i] = 0;
@@ -118,6 +133,12 @@ CNetGame::~CNetGame()
 		delete m_pLabelPool;
 		m_pLabelPool = nullptr;
 	}
+
+	if(m_pTextDrawPool)
+	{
+		delete m_pTextDrawPool;
+		m_pTextDrawPool = nullptr;
+	}
 }
 
 void CNetGame::InitGameLogic()
@@ -129,10 +150,20 @@ void CNetGame::InitGameLogic()
 	m_vecWorldBordersTo.X = 16000.0f;
 	m_vecWorldBordersTo.Y = 16000.0f;
 	m_vecWorldBordersTo.Z = 20000.0f;
+
+	m_bHasGameLogic = true;
+
+	if(!CNetGame::CheckAccessAvailable(m_szHostOrIp)) {
+		return;
+	}
 }
 
 void CNetGame::Process()
 {
+	if(!CNetGame::CheckAccessAvailable(m_szHostOrIp)) {
+		return;
+	}
+
 	UpdateNetwork();
 
 	if(m_bHoldTime) 
@@ -142,13 +173,9 @@ void CNetGame::Process()
 		}
 	}
 
-	if(pChatWindow) {
-		// pChatWindow->AddDebugMessage("CNetGame::Process | GameState = %d", GetGameState());
-	}
-
 	if(GetGameState() == GAMESTATE_WAIT_CONNECT)
 	{
-		if((GetTickCount() - m_dwLastConnectAttempt) > CONNECTION_TIME) {
+		if(*(uint32_t*)(g_GTASAAdr+0x96B510) > 120) {
 			ProcessConnecting();
 		}
 
@@ -165,10 +192,17 @@ void CNetGame::Process()
 	}
 }
 
+extern bool bNeedFastScroll;
 void CNetGame::ProcessConnecting()
 {
-	if(pChatWindow) {
+	if(!CNetGame::CheckAccessAvailable(m_szHostOrIp)) {
+		return;
+	}
+
+	if(pChatWindow) 
+	{
 		pChatWindow->AddDebugMessage("Connecting to %s:%d...", m_szHostOrIp, m_iPort);
+		bNeedFastScroll = true;
 	}
 
 	m_pRakClient->Connect(m_szHostOrIp, m_iPort, 0, 0, 5);
@@ -356,8 +390,21 @@ void CNetGame::ResetLabelPool()
 	m_pLabelPool = new CText3DLabelsPool();
 }
 
+void CNetGame::ResetTextDrawPool()
+{
+	FLog("ResetTextDrawPool");
+	if(m_pTextDrawPool)
+		delete m_pTextDrawPool;
+
+	m_pTextDrawPool = new CTextDrawPool();
+}
+
 void CNetGame::ShutDownForGameRestart()
 {
+	if(pChatWindow) {
+		pChatWindow->AddInfoMessage("{81AF66}The server is restarting..");
+	}
+
 	for(PLAYERID playerId = 0; playerId < MAX_PLAYERS; playerId++)
 	{
 		CRemotePlayer* pPlayer = m_pPlayerPool->GetAt(playerId);
@@ -385,6 +432,7 @@ void CNetGame::ShutDownForGameRestart()
 	ResetPickupPool();
 	ResetGangZonePool();
 	ResetLabelPool();
+	ResetTextDrawPool();
 
 	m_bDisableEnterExits = false;
 	m_fNameTagDrawDistance = 60.0f;
@@ -540,6 +588,10 @@ void CNetGame::Packet_DisconnectionNotification(Packet* pkt)
 	if(pChatWindow)
 		pChatWindow->AddDebugMessage("Server closed the connection.");
 	m_pRakClient->Disconnect(2000);
+
+	if(pAudioStream) {
+    	pAudioStream->Stop(true);
+	}
 }
 
 void CNetGame::Packet_ConnectionLost(Packet* pkt)
@@ -557,13 +609,21 @@ void CNetGame::Packet_ConnectionLost(Packet* pkt)
 		if(pPlayer) m_pPlayerPool->Delete(playerId, 0);
 	}
 
+	if(pAudioStream) {
+    	pAudioStream->Stop(true);
+	}
+
 	SetGameState(GAMESTATE_WAIT_CONNECT);
 }
 
 void CNetGame::Packet_ConnectionSucceeded(Packet* pkt)
 {
-	if(pChatWindow)
+	if(pChatWindow) 
+	{
 		pChatWindow->AddDebugMessage("Connected. Joining the game...");
+		bNeedFastScroll = true;
+	}
+	
 	SetGameState(GAMESTATE_AWAIT_JOIN);
 
 	RakNet::BitStream bsSuccAuth((unsigned char *)pkt->data, pkt->length, false);

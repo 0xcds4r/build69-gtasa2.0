@@ -13,6 +13,8 @@
 #include "scripting.h"
 #include "radarcolors.h"
 #include "util.h"
+#include "snapshothelper.h"
+#include "textdraw.h"
 
 class CGame
 {

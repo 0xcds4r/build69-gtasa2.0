@@ -64,8 +64,9 @@ int CPickupPool::GetNumberFromID(int iPickup)
 {
 	for(int i=0; i<MAX_PICKUPS; i++)
 	{
-		if(m_iPickupID[i] == iPickup)
+		if(m_iPickupID[i] == iPickup) {
 			return i;
+		}
 	}
 
 	return -1;
@@ -89,7 +90,7 @@ void CPickupPool::PickedUp(int iPickup)
 		{
 			RakNet::BitStream bsPickup;
 			bsPickup.Write(index);
-			if(pChatWindow) pChatWindow->AddDebugMessage("RPC: Sending RPC_PickedUpPickup (PickedUp: %d)", index);
+			// if(pChatWindow) pChatWindow->AddDebugMessage("RPC: Sending RPC_PickedUpPickup (PickedUp: %d)", index);
 			pNetGame->GetRakClient()->RPC(&RPC_PickedUpPickup, &bsPickup, HIGH_PRIORITY, RELIABLE_SEQUENCED, 0, false, UNASSIGNED_NETWORK_ID, 0);
 			m_iTimer[index] = 15;
 		}
@@ -108,7 +109,8 @@ void CPickupPool::Process()
 			{
 				if (ScriptCommand(&is_pickup_picked_up, m_dwHnd[i]))
 				{
-					FLog("Picked up %u", i);
+					// FLog("Picked up %u", i);
+
 					RakNet::BitStream bsPickup;
 					if(m_droppedWeapon[i].bDroppedWeapon)
 					{
@@ -123,8 +125,9 @@ void CPickupPool::Process()
 
 				}
 			}
-			else if(m_iTimer[i] > 0)
+			else if(m_iTimer[i] > 0) {
 				m_iTimer[i]--;
+			}
 		}
 	}
 }

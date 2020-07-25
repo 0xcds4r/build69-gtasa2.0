@@ -14,6 +14,7 @@
 #include "objectpool.h"
 #include "pickuppool.h"
 #include "textlabelpool.h"
+#include "textdrawpool.h"
 
 #define GAMESTATE_WAIT_CONNECT	9
 #define GAMESTATE_CONNECTING	13
@@ -32,7 +33,7 @@
 #define INVALID_VEHICLE_ID 0xFFFF
 
 // default: 3000
-#define CONNECTION_TIME 30 
+#define CONNECTION_TIME 1000
 
 class CNetGame
 {
@@ -51,6 +52,8 @@ public:
 	CPickupPool* GetPickupPool() { return m_pPickupPool; }
 	CGangZonePool* GetGangZonePool() { return m_pGangZonePool; }
 	CText3DLabelsPool* GetLabelPool() { return m_pLabelPool; }
+	CTextDrawPool* GetTextDrawPool() { return m_pTextDrawPool; }
+
 	RakClientInterface* GetRakClient() { return m_pRakClient; };
 
 	int GetGameState() { return m_iGameState; }
@@ -61,6 +64,7 @@ public:
 	void ResetPickupPool();
 	void ResetGangZonePool();
 	void ResetLabelPool();
+	void ResetTextDrawPool();
 	void ShutDownForGameRestart();
 
 	void SendChatMessage(const char* szMsg);
@@ -71,6 +75,9 @@ public:
 	void DisableMapIcon(uint8_t byteIndex);
 
 	void InitGameLogic();
+	bool HasGameLogic() { return m_bHasGameLogic; };
+
+	bool CheckAccessAvailable(const char* szHostOrIp);
 
 private:
 	RakClientInterface* m_pRakClient;
@@ -80,6 +87,8 @@ private:
 	CPickupPool* 		m_pPickupPool;
 	CGangZonePool*		m_pGangZonePool;
 	CText3DLabelsPool*	m_pLabelPool;
+	CTextDrawPool* 		m_pTextDrawPool;
+
 	int					m_iGameState;
 	uint32_t			m_dwLastConnectAttempt;
 
@@ -126,6 +135,8 @@ public:
 	bool 		m_bInstagib;
 	int 		m_iLagCompensation;
 	int 		m_iVehicleFriendlyFire;
+
+	bool 		m_bHasGameLogic;
 
 	VECTOR 		m_vecWorldBordersFrom;
 	VECTOR 		m_vecWorldBordersTo;

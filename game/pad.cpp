@@ -504,7 +504,7 @@ void HookCPad()
 {
 	memset(&LocalPlayerKeys, 0, sizeof(PAD_KEYS));
 
-	SetupGameHook(g_GTASAAdr + 0x4C4778, (uintptr_t)CPed__ProcessControl_Hook, (uintptr_t*)&CPed__ProcessControl);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6692B4, (uintptr_t)CPed__ProcessControl_Hook, (uintptr_t*)&CPed__ProcessControl);
 
 	ARMHook::installMethodHook(g_GTASAAdr + 0x66D6B4, (uintptr_t)AllVehicles__ProcessControl_Hook);
  	ARMHook::installMethodHook(g_GTASAAdr + 0x66DA5C, (uintptr_t)AllVehicles__ProcessControl_Hook);
@@ -516,21 +516,21 @@ void HookCPad()
  	ARMHook::installMethodHook(g_GTASAAdr + 0x66DEE8, (uintptr_t)AllVehicles__ProcessControl_Hook);
  	ARMHook::installMethodHook(g_GTASAAdr + 0x66E138, (uintptr_t)AllVehicles__ProcessControl_Hook);
 
- 	SetupGameHook(g_GTASAAdr + 0x3FA248, (uintptr_t)CPad__GetPedWalkUpDown_Hook, (uintptr_t*)&CPad__GetPedWalkUpDown);
- 	SetupGameHook(g_GTASAAdr + 0x3FA1C8, (uintptr_t)CPad__GetPedWalkLeftRight_Hook, (uintptr_t*)&CPad__GetPedWalkLeftRight);
- 	SetupGameHook(g_GTASAAdr + 0x3FBD60, (uintptr_t)CPad__GetSprint_Hook, (uintptr_t*)&CPad__GetSprint);                                                            
- 	SetupGameHook(g_GTASAAdr + 0x3FBC5C, (uintptr_t)CPad__JumpJustDown_Hook, (uintptr_t*)&CPad__JumpJustDown);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FBC08, (uintptr_t)CPad__GetJump_Hook, (uintptr_t*)&CPad__GetJump);                                                              
- 	SetupGameHook(g_GTASAAdr + 0x3FBABC, (uintptr_t)CPad__GetAutoClimb_Hook, (uintptr_t*)&CPad__GetAutoClimb);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FBCC0, (uintptr_t)CPad__DiveJustDown_Hook, (uintptr_t*)&CPad__DiveJustDown);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FBD08, (uintptr_t)CPad__SwimJumpJustDown_Hook, (uintptr_t*)&CPad__SwimJumpJustDown);                                                     
- 	SetupGameHook(g_GTASAAdr + 0x3FBA4C, (uintptr_t)CPad__DuckJustDown_Hook, (uintptr_t*)&CPad__DuckJustDown);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FAFBC, (uintptr_t)CPad__MeleeAttackJustDown_Hook, (uintptr_t*)&CPad__MeleeAttackJustDown);                                                  
- 	SetupGameHook(g_GTASAAdr + 0x3FB2D0, (uintptr_t)CPad__GetBlock_Hook, (uintptr_t*)&CPad__GetBlock);                                                             
- 	SetupGameHook(g_GTASAAdr + 0x3F9B04, (uintptr_t)CPad__GetSteeringLeftRight_Hook, (uintptr_t*)&CPad__GetSteeringLeftRight);                                                 
- 	SetupGameHook(g_GTASAAdr + 0x3F9CD4, (uintptr_t)CPad__GetSteeringUpDown_Hook, (uintptr_t*)&CPad__GetSteeringUpDown);                                                    
- 	SetupGameHook(g_GTASAAdr + 0x3FB300, (uintptr_t)CPad__GetAccelerate_Hook, (uintptr_t*)&CPad__GetAccelerate);                                                        
- 	SetupGameHook(g_GTASAAdr + 0x3FA95C, (uintptr_t)CPad__GetBrake_Hook, (uintptr_t*)&CPad__GetBrake);                                                             
- 	SetupGameHook(g_GTASAAdr + 0x3FA790, (uintptr_t)CPad__GetHandBrake_Hook, (uintptr_t*)&CPad__GetHandBrake);                                                         
- 	SetupGameHook(g_GTASAAdr + 0x3FA5C8, (uintptr_t)CPad__GetHorn_Hook, (uintptr_t*)&CPad__GetHorn);                                                          
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x6706D0, (uintptr_t)CPad__GetPedWalkUpDown_Hook, (uintptr_t*)&CPad__GetPedWalkUpDown);
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x671014, (uintptr_t)CPad__GetPedWalkLeftRight_Hook, (uintptr_t*)&CPad__GetPedWalkLeftRight);
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x670CE0, (uintptr_t)CPad__GetSprint_Hook, (uintptr_t*)&CPad__GetSprint);                                                            
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x670274, (uintptr_t)CPad__JumpJustDown_Hook, (uintptr_t*)&CPad__JumpJustDown);                                                         
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x66FAE0, (uintptr_t)CPad__GetJump_Hook, (uintptr_t*)&CPad__GetJump);                                                              
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x674A0C, (uintptr_t)CPad__GetAutoClimb_Hook, (uintptr_t*)&CPad__GetAutoClimb);                                                         
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x672FD0, (uintptr_t)CPad__DiveJustDown_Hook, (uintptr_t*)&CPad__DiveJustDown);                                                         
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x674030, (uintptr_t)CPad__SwimJumpJustDown_Hook, (uintptr_t*)&CPad__SwimJumpJustDown);                                                     
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x6727CC, (uintptr_t)CPad__DuckJustDown_Hook, (uintptr_t*)&CPad__DuckJustDown);                                                         
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x67127C, (uintptr_t)CPad__MeleeAttackJustDown_Hook, (uintptr_t*)&CPad__MeleeAttackJustDown);                                                  
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x66FAD8, (uintptr_t)CPad__GetBlock_Hook, (uintptr_t*)&CPad__GetBlock);                                                             
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x673D84, (uintptr_t)CPad__GetSteeringLeftRight_Hook, (uintptr_t*)&CPad__GetSteeringLeftRight);                                                 
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x672C14, (uintptr_t)CPad__GetSteeringUpDown_Hook, (uintptr_t*)&CPad__GetSteeringUpDown);                                                    
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x67482C, (uintptr_t)CPad__GetAccelerate_Hook, (uintptr_t*)&CPad__GetAccelerate);                                                        
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x66EBE0, (uintptr_t)CPad__GetBrake_Hook, (uintptr_t*)&CPad__GetBrake);                                                             
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x670514, (uintptr_t)CPad__GetHandBrake_Hook, (uintptr_t*)&CPad__GetHandBrake);                                                         
+ 	ARMHook::installPLTHook(g_GTASAAdr + 0x673010, (uintptr_t)CPad__GetHorn_Hook, (uintptr_t*)&CPad__GetHorn);                                                          
 }

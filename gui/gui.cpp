@@ -50,7 +50,7 @@ CGUI::CGUI()
 	m_vecScale.y = io.DisplaySize.y * MULT_Y;
 
 	// font Size
-	m_fFontSize = ScaleY( 30 );
+	m_fFontSize = ScaleY( 30.0f );
 
 	// mouse/touch
 	m_bMousePressed = false;
@@ -90,6 +90,67 @@ CGUI::~CGUI()
 	ImGui::DestroyContext();
 }
 
+void CGUI::PresetsApply()
+{
+	ImGuiStyle* style = &ImGui::GetStyle();
+	ImVec4* colors = style->Colors;
+
+	style->WindowPadding = ImVec2(13, 4);
+	style->WindowRounding = 0.0f;
+	style->FramePadding = ImVec2(6, 3);
+	style->FrameRounding = 20.0f;
+	style->ItemSpacing = ImVec2(15, 4);
+	style->ItemInnerSpacing = ImVec2(14, 10);
+	style->IndentSpacing = 21.0f;
+	style->ScrollbarSize = ScaleY(45.0f);
+	style->ScrollbarRounding = 9.0f;
+	style->GrabMinSize = 18.0f;
+	style->GrabRounding = 8.0f;
+
+	style->WindowBorderSize = 0.0f;
+	style->ChildBorderSize  = 1.0f;
+	style->PopupBorderSize  = 1.0f;
+	style->FrameBorderSize  = 1.0f;
+	style->Alpha            = 1.0f;
+
+	colors[ImGuiCol_Text] 					= ImVec4(RGBA_TO_FLOAT(160, 194, 222, 0xFF));
+	colors[ImGuiCol_TextDisabled] 			= ImVec4(RGBA_TO_FLOAT(128, 128, 128, 0xFF));
+	colors[ImGuiCol_WindowBg]				= ImVec4(RGBA_TO_FLOAT(0, 0, 0, 245));
+	colors[ImGuiCol_ChildBg] 				= ImVec4(RGBA_TO_FLOAT(0, 0, 0, 0xFF));
+	colors[ImGuiCol_PopupBg] 				= ImVec4(RGBA_TO_FLOAT(20, 20, 20, 240));
+	colors[ImGuiCol_Border] 				= ImVec4(RGBA_TO_FLOAT(255, 255, 255, 0xFF));
+	colors[ImGuiCol_BorderShadow] 			= ImVec4(RGBA_TO_FLOAT(255, 255, 255, 0xFF));
+	colors[ImGuiCol_FrameBg] 				= ImVec4(RGBA_TO_FLOAT(0, 0, 0, 0xFF));
+	colors[ImGuiCol_FrameBgHovered] 		= ImVec4(RGBA_TO_FLOAT(40, 40, 40, 120));
+	colors[ImGuiCol_FrameBgActive] 			= ImVec4(RGBA_TO_FLOAT(40, 40, 40, 140));
+	colors[ImGuiCol_TitleBg] 				= ImVec4(RGBA_TO_FLOAT(10, 10, 10, 0xFF));
+	colors[ImGuiCol_TitleBgCollapsed] 		= ImVec4(RGBA_TO_FLOAT(0, 0, 0, 130));
+	colors[ImGuiCol_TitleBgActive] 			= ImVec4(RGBA_TO_FLOAT(16, 16, 16, 0xFF));
+	colors[ImGuiCol_MenuBarBg] 				= ImVec4(RGBA_TO_FLOAT(36, 36, 36, 0xFF));
+	colors[ImGuiCol_ScrollbarBg] 			= ImVec4(RGBA_TO_FLOAT(36, 36, 36, 135));
+	colors[ImGuiCol_ScrollbarGrab] 			= ImVec4(RGBA_TO_FLOAT(177, 40, 0, 0xFF));
+	colors[ImGuiCol_ScrollbarGrabHovered] 	= ImVec4(RGBA_TO_FLOAT(239, 16, 16, 0xFF));
+	colors[ImGuiCol_ScrollbarGrabActive] 	= ImVec4(RGBA_TO_FLOAT(249, 0, 0, 0xFF));
+	colors[ImGuiCol_CheckMark] 				= ImVec4(RGBA_TO_FLOAT(21, 21, 21, 0xFF));
+	colors[ImGuiCol_SliderGrab] 			= ImVec4(RGBA_TO_FLOAT(149, 42, 42, 0xFF));
+	colors[ImGuiCol_SliderGrabActive] 		= ImVec4(RGBA_TO_FLOAT(201, 55, 21, 0xFF));
+	colors[ImGuiCol_Button] 				= ImVec4(RGBA_TO_FLOAT(0, 0, 0, 102));
+	colors[ImGuiCol_ButtonHovered] 			= ImVec4(RGBA_TO_FLOAT(19, 19, 19, 0xFF));
+	colors[ImGuiCol_ButtonActive] 			= ImVec4(RGBA_TO_FLOAT(60, 60, 60, 0xFF));
+	colors[ImGuiCol_Header] 				= ImVec4(RGBA_TO_FLOAT(166, 50, 0, 79));
+	colors[ImGuiCol_HeaderHovered] 			= ImVec4(RGBA_TO_FLOAT(54, 53, 52, 79));
+	colors[ImGuiCol_HeaderActive] 			= ImVec4(RGBA_TO_FLOAT(166, 50, 0, 79));
+	colors[ImGuiCol_ResizeGrip] 			= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_ResizeGripHovered] 		= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_ResizeGripActive] 		= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_PlotLines] 				= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_PlotLinesHovered] 		= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_PlotHistogram] 			= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_PlotHistogramHovered] 	= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+	colors[ImGuiCol_TextSelectedBg] 		= ImVec4(RGBA_TO_FLOAT(255, 220, 255, 0xFF));
+	colors[ImGuiCol_ModalWindowDarkening] 	= ImVec4(RGBA_TO_FLOAT(32, 32, 32, 0xFF));
+}
+
 void CGUI::Render()
 {
 	if(pGame)
@@ -103,12 +164,19 @@ void CGUI::Render()
 		}
 	}
 
+	if(pNetGame)
+	{
+		CTextDrawPool *pTextDrawPool = pNetGame->GetTextDrawPool();
+		if(pTextDrawPool) {
+			pTextDrawPool->Draw();
+		}
+	}
+
 	ImGuiIO& io = ImGui::GetIO();
 
 	ImGui_ImplRenderWare_NewFrame();
 	ImGui::NewFrame();
-
-	// RenderVersion();
+	PresetsApply();
 
 	if(pPlayerTags) {
 		pPlayerTags->Render();
@@ -118,12 +186,12 @@ void CGUI::Render()
 		pChatWindow->Render();
 	}
 
-	if(pDialogWindow) {
-		pDialogWindow->Render();
-	}
-
 	if(pSpawnScreen) {
 		pSpawnScreen->Render();
+	}
+
+	if(pDialogWindow) {
+		pDialogWindow->Render();
 	}
 
 	if(pKeyBoard) {
@@ -156,12 +224,26 @@ bool CGUI::OnTouchEvent(int type, bool multi, int x, int y)
 		}
 	}
 
-	if(pKeyBoard && !pKeyBoard->OnTouchEvent(type, multi, x, y)) {
-		return false;
+	if(pNetGame) 
+	{
+		if(pNetGame->GetTextDrawPool()) {
+			pNetGame->GetTextDrawPool()->OnTouchEvent(type, multi, x, y);
+		}
 	}
 
-	if(pChatWindow && !pChatWindow->OnTouchEvent(type, multi, x, y)) {
-		return false;
+	if(pKeyBoard)
+	{
+		if(!pKeyBoard->OnTouchEvent(type, multi, x, y)) 
+		{
+			return false;
+		}
+	}
+
+	if(pChatWindow)
+	{
+		if(!pChatWindow->OnTouchEvent(type, multi, x, y)) {
+			return false;
+		}
 	}
 
 	switch(type)
@@ -218,4 +300,30 @@ void CGUI::RenderText(ImVec2& posCur, ImU32 col, bool bOutline, const char* text
 	}
 
 	ImGui::GetOverlayDrawList()->AddText(posCur, col, text_begin, text_end);
+}
+
+void CGUI::RenderBGText(float fontSize, ImVec2& posCur, ImU32 col, bool bOutline, const char* text_begin, const char* text_end)
+{
+	int iOffset = 2;
+
+	if(bOutline)
+	{
+		posCur.x -= iOffset;
+		ImGui::GetBackgroundDrawList()->AddText(GetFont(), fontSize, posCur, ImColor(IM_COL32_BLACK), text_begin, text_end);
+		posCur.x += iOffset;
+		// right 
+		posCur.x += iOffset;
+		ImGui::GetBackgroundDrawList()->AddText(GetFont(), fontSize, posCur, ImColor(IM_COL32_BLACK), text_begin, text_end);
+		posCur.x -= iOffset;
+		// above
+		posCur.y -= iOffset;
+		ImGui::GetBackgroundDrawList()->AddText(GetFont(), fontSize, posCur, ImColor(IM_COL32_BLACK), text_begin, text_end);
+		posCur.y += iOffset;
+		// below
+		posCur.y += iOffset;
+		ImGui::GetBackgroundDrawList()->AddText(GetFont(), fontSize, posCur, ImColor(IM_COL32_BLACK), text_begin, text_end);
+		posCur.y -= iOffset;
+	}
+
+	ImGui::GetBackgroundDrawList()->AddText(GetFont(), fontSize, posCur, col, text_begin, text_end);
 }

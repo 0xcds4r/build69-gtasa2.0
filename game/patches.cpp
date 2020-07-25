@@ -14,27 +14,12 @@ struct _ATOMIC_MODEL *ATOMIC_MODELS;
 void ApplyRadarPatches()
 {
     FLog("ApplyRadarPatches");
-
-    // CRadar::Draw3dMarkers
-    ARMHook::writeMemory(g_GTASAAdr + 0x4420D0, (uintptr_t)"\x2C\xE0", 2); 
-
-    // CRadar::Draw3dMarkers
-    ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); 
-      
-    // CRadar::DrawCoordBlip
-    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); 
-
-    // CRadar::Draw3dMarkers
-    ARMHook::writeMemory(g_GTASAAdr + 0x44212C, (uintptr_t)"\x30\x46", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x440470, (uintptr_t)"\x3A\xE0", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x4404E8, (uintptr_t)"\x30\x46", 2); 
     
-    // CRadar::DrawCoordBlip
-    ARMHook::writeMemory(g_GTASAAdr + 0x43FB36, (uintptr_t)"\x48\x46", 2); 
-    ARMHook::writeMemory(g_GTASAAdr + 0x2AB556, (uintptr_t)"\x00\x21", 2); 
+    // CRadar::AddBlipToLegendList
+    ARMHook::makeRET(g_GTASAAdr+0x441A08);
+
+    // CRadar::DrawLegend
+    ARMHook::makeRET(g_GTASAAdr+0x441B74);
 }
 
 void ApplyGlobalPatches()
@@ -125,9 +110,6 @@ void ApplyGlobalPatches()
     ARMHook::unprotect(g_GTASAAdr+0x6B0130);
     memcpy((void*)(g_GTASAAdr+0x6B0130), "GTASAMP", 8);
 
-    // _rwOpenGLRasterCreate
-    ARMHook::writeMemory(g_GTASAAdr + 0x1AE95E, (uintptr_t)"\x01\x22", 2);
-
     // CVehicleModelInfo::SetupCommonData ~ Increase matrix
     ARMHook::writeMemory(g_GTASAAdr + 0x468B7E, (uintptr_t)"\x4F\xF4\x00\x30", 4);
     ARMHook::writeMemory(g_GTASAAdr + 0x468B88, (uintptr_t)"\xF7\x20", 2);
@@ -168,6 +150,11 @@ void ApplyGlobalPatches()
     *(uintptr_t*)(g_GTASAAdr+0x46BE10) = 0x10000000;
     ARMHook::unprotect(g_GTASAAdr+0x685FA0);
     *(uintptr_t*)(g_GTASAAdr+0x685FA0) = 0x10000000;
+
+    // _rwOpenGLRasterCreate
+    ARMHook::writeMemory(g_GTASAAdr + 0x1AE95E, (uintptr_t)"\x01\x22", 2);
+
+    ApplyRadarPatches();
 }
 
 void ApplySCAndPatches()
@@ -179,6 +166,8 @@ void ApplySCAndPatches()
     *(bool*)(g_SCANDAdr+0x31C149) = true;
 }
 
+#include "chatwindow.h"
+extern CChatWindow* pChatWindow;
 void ApplySAMPPatchesInGame()
 {
 	FLog("ApplySAMPPatchesInGame");
@@ -190,8 +179,8 @@ void ApplySAMPPatchesInGame()
 	*(uint32_t*)(g_GTASAAdr + 0x98D2B8) = 100;
 
     // Draw distance hack (LAGS?)
-    ARMHook::unprotect(g_GTASAAdr+0x41F300);
-    *(uint32_t *)(g_GTASAAdr+0x41F300) = 0x41C80000;
+    /*ARMHook::unprotect(g_GTASAAdr+0x41F300);
+    *(uint32_t *)(g_GTASAAdr+0x41F300) = 0x41C80000; // 0x41C80000;
     ARMHook::unprotect(g_GTASAAdr+0x41FF6C);
-    *(uint32_t *)(g_GTASAAdr+0x41FF6C) = 0x40A00000;
+    *(uint32_t *)(g_GTASAAdr+0x41FF6C) = 0x40A00000; // 0x40A00000;*/
 }

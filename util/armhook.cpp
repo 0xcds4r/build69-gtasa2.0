@@ -41,8 +41,6 @@ uintptr_t ARMHook::getLibraryAddress(const char* library)
     return address;
 }
 
-// --------------------------------------------------------------------
-
 void ARMHook::sa_initializeTrampolines(uintptr_t start, uintptr_t end)
 {
     memlib_start = start;
@@ -52,8 +50,6 @@ void ARMHook::sa_initializeTrampolines(uintptr_t start, uintptr_t end)
     mprotect((void*)(mmap_start & 0xFFFFF000), PAGE_SIZE, PROT_READ | PROT_EXEC | PROT_WRITE);
     mmap_end = (mmap_start + PAGE_SIZE);
 }
-
-// --------------------------------------------------------------------
 
 void ARMHook::unprotect(uintptr_t ptr)
 {
@@ -75,6 +71,8 @@ void ARMHook::makeNOP(uintptr_t addr, unsigned int count)
 
 void ARMHook::writeMemory(uintptr_t dest, uintptr_t src, size_t size)
 {
+    // FLog("writeMemory addr: 0x%X", dest);
+
     ARMHook::unprotect(dest);
     memcpy((void*)dest, (void*)src, size);
     cacheflush(dest, dest+size, 0);
@@ -110,8 +108,8 @@ void ARMHook::installMethodHook(uintptr_t addr, uintptr_t func)
 void ARMHook::installPLTHook(uintptr_t addr, uintptr_t func, uintptr_t *orig)
 {
     ARMHook::unprotect(addr);
+    *orig = *(uintptr_t*)addr;
     *(uintptr_t*)addr = func;
-    *orig = addr;
 }
 
 void ARMHook::InjectCode(uintptr_t addr, uintptr_t func, int reg)
@@ -137,19 +135,14 @@ void ARMHook::makeRET(uintptr_t addr)
     ARMHook::writeMemory(addr, (uintptr_t)"\xF7\x46", 2);
 }
 
-void ARMHook::installHook(uintptr_t addr, uintptr_t func, uintptr_t *orig, bool gta)
-{
-    // nothing
-}
-
 void SetupGameHook(uintptr_t addr, uintptr_t func, uintptr_t *orig)
 {
-    FLog("SetUpHook: 0x%X -> 0x%X", addr, func);
+    // FLog("SetUpHook: 0x%X -> 0x%X", addr, func);
 
     if(memlib_end < (memlib_start + 0x10) || mmap_end < (mmap_start + 0x20))
     {
-        FLog("SetUpHook: space limit reached");
-        // std::terminate();
+        FLog("[!] code #435");
+        std::terminate();
     }
 
     ARMHook::readMemory(mmap_start, addr, 4);

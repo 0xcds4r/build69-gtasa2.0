@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RW/RenderWare.h"
+
 #define PLAYER_PED_SLOTS	210
 
 typedef unsigned short VEHICLEID;
@@ -14,6 +16,14 @@ typedef struct _VECTOR
 {
 	float X,Y,Z;
 } VECTOR, *PVECTOR;
+
+typedef struct _RECT
+{
+	float fLeft;
+	float fBottom;
+	float fRight;
+	float fTop;
+} RECT, *PRECT;
 
 #pragma pack(1)
 typedef struct _MATRIX4X4 
@@ -35,14 +45,24 @@ typedef struct _ENTITY_TYPE
 {
 	// ENTITY STUFF
 	uint32_t vtable; 		// 0-4		;vtable
+	PADDING(_pad258, 16); 	// 4-20
+	MATRIX4X4 *mat; // 20-...
 } ENTITY_TYPE;
 
 //-----------------------------------------------------------
+
+typedef struct
+{
+	char unk[0x14];
+	int iNodeId;
+} AnimBlendFrameData;
 
 #pragma pack(1)
 typedef struct _PED_TYPE
 {
 	ENTITY_TYPE entity; 		// 0000-0184	;entity
+	PADDING(_pad248, 988);
+	AnimBlendFrameData* aPedBones[19];
 } PED_TYPE;
 
 //-----------------------------------------------------------

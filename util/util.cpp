@@ -1,38 +1,5 @@
 #include "../main.h"
 
-uintptr_t FindLibrary(const char* library)
-{
-    char filename[0xFF] = {0},
-    buffer[2048] = {0};
-    FILE *fp = 0;
-    uintptr_t address = 0;
-
-    sprintf( filename, "/proc/%d/maps", getpid() );
-
-    fp = fopen( filename, "rt" );
-    if(fp == 0)
-    {
-        FLog("ERROR: can't open file %s", filename);
-        goto done;
-    }
-
-    while(fgets(buffer, sizeof(buffer), fp))
-    {
-        if( strstr( buffer, library ) )
-        {
-            address = (uintptr_t)strtoul( buffer, 0, 16 );
-            break;
-        }
-    }
-
-    done:
-
-    if(fp)
-      fclose(fp);
-
-    return address;
-}
-
 void cp1251_to_utf8(char *out, const char *in, unsigned int len)
 {
     static const int table[128] = 

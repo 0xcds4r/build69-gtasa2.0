@@ -6,7 +6,7 @@ class CPlayerTags
 {
 public:
 	CPlayerTags();
-	~CPlayerTags();
+	~CPlayerTags() {};
 
 	void Render();
 

@@ -110,7 +110,7 @@ CObject *CGame::NewObject(int iModel, float fPosX, float fPosY, float fPosZ, VEC
 
 uint32_t CGame::CreatePickup(int iModel, int iType, float fX, float fY, float fZ, int* unk)
 {
-	if(!GetModelInfoById(iModel)) {
+	if(!GetModelInfoByID(iModel)) {
 		iModel = 18631;
 	}
 
@@ -251,7 +251,6 @@ void CGame::UpdateCheckpoints()
 	}
 }
 
-
 // 0.3.7
 uint32_t CGame::CreateRadarMarkerIcon(int iMarkerType, float fX, float fY, float fZ, int iColor, int iStyle)
 {
@@ -391,7 +390,7 @@ void CGame::DisableTrainTraffic()
 
 void CGame::SetWantedLevel(uint8_t byteLevel)
 {
-	ARMHook::writeMemory(g_GTASAAdr+0x2BDF6C, (uintptr_t)&byteLevel, 1);
+	// ARMHook::writeMemory(g_GTASAAdr+0x2BDF6C, (uintptr_t)&byteLevel, 1);
 }
 
 bool CGame::IsAnimationLoaded(char *szAnimFile)
@@ -423,7 +422,7 @@ void CGame::SetGravity(float fGravity)
 
 void CGame::ToggleCJWalk(bool bUseCJWalk)
 {
-	// todo: find & add
+	// ADDED IN GLOBAL PATCHES (AUTO)
 }
 
 void CGame::DisableMarker(uint32_t dwMarkerID)

@@ -88,3 +88,31 @@ PLAYERID CPlayerPool::FindRemotePlayerIDFromGtaPtr(PED_TYPE * pActor)
 
 	return INVALID_PLAYER_ID;	
 }
+
+void CPlayerPool::ProcessAttachedObjects()
+{
+	CLocalPlayer* pLocalPlayer = GetLocalPlayer();
+	
+	if(pLocalPlayer)
+	{
+		CPlayerPed *pPlayerPed = pLocalPlayer->GetPlayerPed();
+		
+		if(pPlayerPed) {
+			pPlayerPed->ProcessAttachedObjects();
+		}
+	}
+
+	for(uint16_t i = 0; i < MAX_PLAYERS; i++)
+	{
+		CRemotePlayer *pRemotePlayer = GetAt(i);
+
+		if(pRemotePlayer)
+		{
+			CPlayerPed *pPlayerPed = pRemotePlayer->GetPlayerPed();
+			
+			if(pPlayerPed) {
+				pPlayerPed->ProcessAttachedObjects();
+			}
+		}
+	}
+}

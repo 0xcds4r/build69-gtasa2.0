@@ -92,6 +92,10 @@ bool CLocalPlayer::Process()
 			m_bIsActive = false;
 			m_bIsWasted = true;
 
+			if(m_pPlayerPed->IsHaveAttachedObject()) {
+				m_pPlayerPed->RemoveAllAttachedObjects();
+			}
+
 			return true;
 		}
 

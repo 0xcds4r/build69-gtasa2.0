@@ -66,6 +66,10 @@ private:
 	void AddCharToInput(char sym);
 	void DeleteCharFromInput();
 	void Send();
+
+	void setInput(std::string msg);
+	void clearInput();
+	void WriteHistory(std::string msg);
 	
 	bool m_bEnable;
 	bool m_bInited;
@@ -77,6 +81,10 @@ private:
 	int m_iLayout;
 	int m_iCase;
 	int m_iPushedKey;
+	int m_iCurrentPosItem;
+
+	bool m_bKeyHistoryPressed[2]; 
+	std::vector<std::string> m_szKeyBoardHistory;
 
 	std::vector<kbKey> m_Rows[3][4]; // eng, rus, num
 

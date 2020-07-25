@@ -4,19 +4,38 @@
 #define DIALOG_STYLE_INPUT		1
 #define DIALOG_STYLE_LIST		2
 #define DIALOG_STYLE_PASSWORD	3
+#define DIALOG_STYLE_TABLIST	4
+#define DIALOG_STYLE_TABLIST_HEADERS	5
+
+#include <string>
+
+template <typename T>
+std::string to_string(T value)
+{
+    std::ostringstream os ;
+    os << value ;
+    return os.str() ;
+}
 
 class CDialogWindow
 {
 public:
 	CDialogWindow();
-	~CDialogWindow();
+	~CDialogWindow() {};
 
 	void Render();
 	void Clear();
+
 	void Show(bool bShow);
 	void SetInfo(char* szInfo, int length);
+	void MakeList();
+	void MakeChildForList();
+	void MakeListHeaders();
+	void PutListHeadersTitle();
+	
+	void StyleColorsDialog(float roundSize);
 
-	void DrawFormattedText();
+	bool IsShowing() { return m_bIsActive; };
 
 public:
 	bool		m_bIsActive;
@@ -30,4 +49,16 @@ public:
 
 	float		m_fSizeX;
 	float 		m_fSizeY;
+
+	int m_bSL;
+	
+	uint8_t m_iSelectedItem;
+	std::string m_strSelectedItemText;
+
+	int m_selectedItem;
+	
+	int m_iNumberOfTaps;
+	uint32_t m_lastTimeTap;
+	uint32_t m_touchDownTime;
+	bool m_bSplitted;
 };

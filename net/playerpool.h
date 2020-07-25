@@ -41,6 +41,8 @@ public:
 	char* GetPlayerName(PLAYERID playerId){ return m_szPlayerNames[playerId]; }
 
 	PLAYERID FindRemotePlayerIDFromGtaPtr(PED_TYPE * pActor);
+	
+	void ProcessAttachedObjects();
 
 private:
 	// LOCAL

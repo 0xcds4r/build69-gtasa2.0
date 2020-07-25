@@ -5,6 +5,12 @@ class CEntity
 public:
 	CEntity() {};
 	virtual ~CEntity() {};
+	virtual void Add();
+	virtual void Remove();
+
+	void UpdateRwMatrixAndFrame();
+	void UpdateMatrix(MATRIX4X4 mat);
+	void Render();
 
 	// 0.3.7
 	void GetMatrix(PMATRIX4X4 Matrix);
@@ -31,6 +37,16 @@ public:
 	float GetDistanceFromLocalPlayerPed();
 	float GetDistanceFromPoint(float x, float y, float z);
 
+	bool IsValidMatrix(MATRIX4X4 mat);
+	bool IsValidMatrixPointer(MATRIX4X4* mat);
+	bool IsValidVector(VECTOR vecSpeed);
+
+	uintptr_t GetRWObject();
+
+	void SetCollisionChecking(bool bState);
+	void SetGravityProcessing(bool bState);
+	bool GetCollisionChecking();
+	
 public:
 	ENTITY_TYPE		*m_pEntity;
 	uint32_t		m_dwGTAId;

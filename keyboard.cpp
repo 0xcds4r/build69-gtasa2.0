@@ -3,31 +3,32 @@
 #include "gui/gui.h"
 #include "game/game.h"
 #include "keyboard.h"
+#include "dialog.h"
 
 extern CGUI *pGUI;
+extern CDialogWindow *pDialogWindow;
+extern CGame *pGame;
 
 CKeyBoard::CKeyBoard()
 {
-	// Log("Initalizing KeyBoard..");
+	FLog("Initalizing KeyBoard..");
 
 	ImGuiIO& io = ImGui::GetIO();
 
-	// Размер клавиатуры
 	m_Size = ImVec2(io.DisplaySize.x, io.DisplaySize.y * 0.55);
-	// Позиция клавиатуры (top-left point)
 	m_Pos = ImVec2(0, io.DisplaySize.y * (1-0.55)); // 55% of screen height
-	// Размер шрифта
+
 	m_fFontSize = pGUI->ScaleY(70.0f);
-	// Высота всех кнопок
 	m_fKeySizeY = m_Size.y / 5;
 
-	// Log("Size: %f, %f. Pos: %f, %f", m_Size.x, m_Size.y, m_Pos.x, m_Pos.y);
-	// Log("font size: %f. Key's height: %f", m_fFontSize, m_fKeySizeY);
+	FLog("Size: %f, %f. Pos: %f, %f", m_Size.x, m_Size.y, m_Pos.x, m_Pos.y);
+	FLog("font size: %f. Key's height: %f", m_fFontSize, m_fKeySizeY);
 
 	m_bEnable = false;
 	m_iLayout = LAYOUT_ENG;
 	m_iCase = LOWER_CASE;
 	m_iPushedKey = -1;
+	m_iCurrentPosItem = 0;
 
 	m_utf8Input[0] = '\0';
 	m_iInputOffset = 0;
@@ -46,6 +47,39 @@ void CKeyBoard::Render()
 	if(!m_bEnable) return;
 
 	ImGuiIO& io = ImGui::GetIO();
+
+	float fDefWidth = m_Size.x / 10;
+
+	ImVec2 vecPosButFirst = ImVec2(io.DisplaySize.x-pGUI->ScaleY(100)*4, 0);
+	ImVec2 vecPosButSecond = ImVec2((io.DisplaySize.x-pGUI->ScaleY(80)*4)+pGUI->ScaleY((fDefWidth-pGUI->ScaleY(80)))+pGUI->ScaleY(20), 0);
+
+	if(pDialogWindow)
+	{
+		if(!pDialogWindow->IsShowing())
+		{
+			ImGui::GetOverlayDrawList()->AddRectFilled(
+				ImVec2(vecPosButFirst.x-(fDefWidth-pGUI->ScaleY(80))/2, m_Pos.y-m_fKeySizeY),
+				ImVec2(vecPosButFirst.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2, m_Pos.y),
+				m_bKeyHistoryPressed[0] == false ? 0xB0000000 : 0xFF3291F5);
+		
+			ImGui::GetOverlayDrawList()->AddRectFilled(
+				ImVec2(vecPosButSecond.x-(fDefWidth-pGUI->ScaleY(80))/2, m_Pos.y-m_fKeySizeY),
+				ImVec2(vecPosButSecond.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2, m_Pos.y),
+				m_bKeyHistoryPressed[1] == false ? 0xB0000000 : 0xFF3291F5);
+				
+			ImGui::GetOverlayDrawList()->AddTriangleFilled(
+				ImVec2(vecPosButFirst.x, m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2 ),
+				ImVec2(vecPosButFirst.x+pGUI->ScaleY(40), m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2-pGUI->ScaleY(60)),
+				ImVec2(vecPosButFirst.x+pGUI->ScaleY(80), m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2),
+				0xFF8A8886);
+		
+			ImGui::GetOverlayDrawList()->AddTriangleFilled(
+				ImVec2(vecPosButSecond.x, m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2-pGUI->ScaleY(60)),
+				ImVec2(vecPosButSecond.x+pGUI->ScaleY(40), m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2),
+				ImVec2(vecPosButSecond.x+pGUI->ScaleY(80), m_Pos.y-(m_fKeySizeY-pGUI->ScaleY(60))/2-pGUI->ScaleY(60)),
+				0xFF8A8886);
+		}
+	}
 
 	// background
 	ImGui::GetOverlayDrawList()->AddRectFilled(	m_Pos, ImVec2(m_Size.x, io.DisplaySize.y), 0xB0000000);
@@ -136,9 +170,12 @@ void CKeyBoard::Close()
 {
 	m_bEnable = false;
 
+	pGame->FindPlayerPed()->SetControllable(1);
+
 	m_sInput.clear();
 	m_iInputOffset = 0;
 	m_utf8Input[0] = 0;
+	m_iCurrentPosItem = 0;
 	m_iCase = LOWER_CASE;
 	m_iPushedKey = -1;
 	m_pHandler = nullptr;
@@ -151,32 +188,108 @@ bool CKeyBoard::OnTouchEvent(int type, bool multi, int x, int y)
 	static bool bWannaClose = false;
 
 	if(!m_bEnable) return true;
+	ImGuiIO& io = ImGui::GetIO();
 
-	if(type == TOUCH_PUSH && y < m_Pos.y) bWannaClose = true;
+	float fDefWidth = m_Size.x/10;
+	ImVec2 vecPosButFirst = ImVec2(io.DisplaySize.x-pGUI->ScaleY(100)*4.75f, 0);
+	ImVec2 vecPosButSecond = ImVec2((io.DisplaySize.x-pGUI->ScaleY(80)*4)+pGUI->ScaleY((fDefWidth-pGUI->ScaleY(80)))+pGUI->ScaleY(20), 0);
+
+	if(pDialogWindow)
+	{
+		if(!pDialogWindow->IsShowing())
+		{
+			if(x > io.DisplaySize.x - pGUI->ScaleX(182.0f) && x < io.DisplaySize.x && y > pGUI->ScaleY(15.0f) && y < pGUI->ScaleY(325.0f) ) {
+				return true;
+			}
+		}
+	}
+
+	if(type == TOUCH_PUSH && y < m_Pos.y) {
+		bWannaClose = true;
+	}
+
+	if(x >= vecPosButFirst.x && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y)
+	{
+		bWannaClose = false;
+	}
+
 	if(type == TOUCH_POP && y < m_Pos.y && bWannaClose)
 	{
 		bWannaClose = false;
 		Close();
-		return false;
+		return true;
 	}
 
 	m_iPushedKey = -1;
-
 	kbKey* key = GetKeyFromPos(x, y);
-	if(!key) return false;
+	if( !(x >= vecPosButFirst.x && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y) )
+	{
+		if(!key) return false;
+	}
 
 	switch(type)
 	{
 		case TOUCH_PUSH:
-		m_iPushedKey = key->id;
+		m_bKeyHistoryPressed[0] = false;
+		m_bKeyHistoryPressed[1] = false;
+		if(x >= vecPosButFirst.x && x <= vecPosButFirst.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 + pGUI->ScaleX(60.0f) && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y)
+		{
+			m_bKeyHistoryPressed[0] = true;
+			m_bKeyHistoryPressed[1] = false;
+		}
+		else if(x >= vecPosButSecond.x-(fDefWidth-pGUI->ScaleY(80))/2 && x <= vecPosButSecond.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y) 
+		{
+			m_bKeyHistoryPressed[0] = false;
+			m_bKeyHistoryPressed[1] = true;
+		}
+		else if(key)
+			m_iPushedKey = key->id;
 		break;
 
 		case TOUCH_MOVE:
-		m_iPushedKey = key->id;
+		m_bKeyHistoryPressed[0] = false;
+		m_bKeyHistoryPressed[1] = false;
+		if(x >= vecPosButFirst.x && x <= vecPosButFirst.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 + pGUI->ScaleX(60.0f) && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y)
+		{
+			m_bKeyHistoryPressed[0] = true;
+			m_bKeyHistoryPressed[1] = false;
+		}
+		else if(x >= vecPosButSecond.x-(fDefWidth-pGUI->ScaleY(80))/2 && x <= vecPosButSecond.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y) 
+		{
+			m_bKeyHistoryPressed[0] = false;
+			m_bKeyHistoryPressed[1] = true;
+		}
+		else if(key)
+			m_iPushedKey = key->id;
 		break;
 
 		case TOUCH_POP:
+		m_bKeyHistoryPressed[0] = false;
+		m_bKeyHistoryPressed[1] = false;
+		if(x >= vecPosButFirst.x && x <= vecPosButFirst.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 + pGUI->ScaleX(60.0f) && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y)
+		{
+			if(m_iCurrentPosItem < m_szKeyBoardHistory.size())
+			{
+				setInput(m_szKeyBoardHistory[m_iCurrentPosItem]);
+				m_iCurrentPosItem++;
+			}
+		}
+		else if(x >= vecPosButSecond.x-(fDefWidth-pGUI->ScaleY(80))/2 && x <= vecPosButSecond.x+pGUI->ScaleY(80)+(fDefWidth-pGUI->ScaleY(80))/2 && y >= m_Pos.y-m_fKeySizeY && y <= m_Pos.y) 
+		{
+			if(m_iCurrentPosItem > 0)
+			{
+				m_iCurrentPosItem--;
+				setInput(m_szKeyBoardHistory[m_iCurrentPosItem]);
+			}
+			else
+			{
+				clearInput();
+			}
+		}
+
+		if(key) {
 			HandleInput(*key);
+		}
 		break;
 	}
 
@@ -236,41 +349,89 @@ void CKeyBoard::DeleteCharFromInput()
 
 	ImVec2 textSize;
 
-	// удаляем последний символ в строке
 	m_sInput.pop_back();
 
 	check:
-	// Оффсет пересчитывать не нужно
 	if(m_iInputOffset == 0) goto ret;
-	// высчитываем длину строки (если мы сдвинем offset)
 	cp1251_to_utf8(m_utf8Input, &m_sInput.c_str()[m_iInputOffset-1]);
 	textSize = pGUI->GetFont()->CalcTextSizeA(m_fFontSize, FLT_MAX, 0.0f,  m_utf8Input, nullptr, nullptr);
 
-	// Если строка помещается в Edit
 	if(textSize.x <= (m_Size.x - (m_Size.x * 0.04)))
 	{
-		m_iInputOffset--; // Сохраняем
-		// Можем сдвинуть еще?
+		m_iInputOffset--; 
 		goto check;
 	}
-	else // Строка не помещается
+	else 
 	{
-		// Восстанавливаем строку
 		ret:
 		cp1251_to_utf8(m_utf8Input, &m_sInput.c_str()[m_iInputOffset]);
 		return;
 	}
 }
 
+void CKeyBoard::WriteHistory(std::string msg)
+{
+	std::vector<std::string>::iterator it;
+	it = m_szKeyBoardHistory.begin();
+	m_szKeyBoardHistory.insert(it, msg);
+}
+
+void CKeyBoard::clearInput()
+{
+	if(pDialogWindow)
+	{
+		if(pDialogWindow->IsShowing())
+		{
+			return;
+		}
+	}
+
+	// clear
+	for(uint16_t it = 0; it < 256; it++) {
+		DeleteCharFromInput();
+	}
+}
+
+void CKeyBoard::setInput(std::string msg)
+{
+	if(pDialogWindow)
+	{
+		if(pDialogWindow->IsShowing())
+		{
+			return;
+		}
+	}
+
+	clearInput();
+
+	// add
+	for(int i = 0; i < msg.size(); i++) 
+	{
+		AddCharToInput((char)msg[i]);
+	}
+}
+
 void CKeyBoard::Send()
 {
-	if(m_pHandler) m_pHandler(m_sInput.c_str());
+	if(m_pHandler) 
+	{
+		if(pDialogWindow)
+		{
+			if(!pDialogWindow->IsShowing()) 
+			{
+				WriteHistory(m_sInput);
+			}
+		}
+		
+		m_pHandler(m_sInput.c_str());
+	}
+
+	pGame->FindPlayerPed()->SetControllable(1);
 	m_bEnable = false;
 }
 
 kbKey* CKeyBoard::GetKeyFromPos(int x, int y)
 {
-	// Находим строку
 	int iRow = (y-m_Pos.y) / m_fKeySizeY;
 	if(iRow <= 0) return nullptr;
 

@@ -1,5 +1,9 @@
 #pragma once
+
 #include "vendor/imgui/imgui.h"
+#include "util.h"
+
+#define RGBA_TO_FLOAT(r,g,b,a) (float)r/255.0f, (float)g/255.0f, (float)b/255.0f, (float)a/255.0f
 
 enum eTouchType
 {
@@ -25,6 +29,8 @@ public:
 	bool OnTouchEvent(int type, bool multi, int x, int y);
 
 	void RenderText(ImVec2& pos, ImU32 col, bool bOutline, const char* text_begin, const char* text_end = nullptr);
+	void RenderBGText(float fontSize, ImVec2& posCur, ImU32 col, bool bOutline, const char* text_begin, const char* text_end = nullptr);
+	void PresetsApply();
 
 private:
 	void RenderRakNetStatistics();

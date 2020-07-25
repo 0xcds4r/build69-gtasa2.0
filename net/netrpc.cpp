@@ -14,6 +14,7 @@ int iNetModeNormalInCarSendRate		= NETMODE_INCAR_SENDRATE;
 int iNetModeFiringSendRate			= NETMODE_FIRING_SENDRATE;
 int iNetModeSendMultiplier 			= NETMODE_SEND_MULTIPLIER;
 
+extern bool bNeedFastScroll;
 void InitGame(RPCParameters *rpcParams)
 {
 	FLog("RPC: InitGame");
@@ -83,7 +84,11 @@ void InitGame(RPCParameters *rpcParams)
 	pGame->SetWorldWeather(pNetGame->m_byteWeather);
 	pGame->ToggleCJWalk(pNetGame->m_bUseCJWalk);
 
-	if(pChatWindow) pChatWindow->AddDebugMessage("Connected to {B9C9BF}%.64s", pNetGame->m_szHostName);
+	if(pChatWindow) 
+	{
+		pChatWindow->AddDebugMessage("Connected to {B9C9BF}%.64s", pNetGame->m_szHostName);
+		bNeedFastScroll = true;
+	}
 }
 
 void ServerJoin(RPCParameters *rpcParams)
@@ -531,9 +536,15 @@ void DialogBox(RPCParameters *rpcParams)
 	char szBuff[4096+1];
 	RakNet::BitStream bsData((unsigned char *)Data,(iBitLength/8)+1,false);
 
+	bsData.Read(wDialogID);
+	if(wDialogID == -1) 
+	{
+		pDialogWindow->Show(false);
+		return;
+	}
+
 	pDialogWindow->Clear();
 
-	bsData.Read(wDialogID);
 	bsData.Read(byteDialogStyle);
 	pDialogWindow->m_wDialogID = wDialogID;
 	pDialogWindow->m_byteDialogStyle = byteDialogStyle;
@@ -566,7 +577,6 @@ void DialogBox(RPCParameters *rpcParams)
 void GameModeRestart(RPCParameters *rpcParams)
 {
 	FLog("RPC: GameModeRestart");
-	if(pChatWindow) pChatWindow->AddInfoMessage("The server is restarting..");
 	pNetGame->ShutDownForGameRestart();
 }
 
@@ -587,22 +597,22 @@ void ConnectionRejected(RPCParameters *rpcParams)
 	bsData.Read(byteRejectReason);
 
 	if(byteRejectReason == REJECT_REASON_BAD_VERSION) {
-		if(pChatWindow) pChatWindow->AddInfoMessage("CONNECTION REJECTED: Incorrect Version.");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}CONNECTION REJECTED: Incorrect Version.");
 	}
 	else if(byteRejectReason == REJECT_REASON_BAD_NICKNAME)
 	{
-		if(pChatWindow) pChatWindow->AddInfoMessage("CONNECTION REJECTED: Unacceptable NickName");
-		if(pChatWindow) pChatWindow->AddInfoMessage("Please choose another nick between and 3-20 characters");
-		if(pChatWindow) pChatWindow->AddInfoMessage("Please use only a-z, A-Z, 0-9");
-		if(pChatWindow) pChatWindow->AddInfoMessage("Use /quit to exit or press ESC and select Quit Game");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}CONNECTION REJECTED: Unacceptable NickName");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}Please choose another nick between and 3-20 characters");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}Please use only a-z, A-Z, 0-9");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}Use /quit to exit or press ESC and select Quit Game");
 	}
 	else if(byteRejectReason == REJECT_REASON_BAD_MOD)
 	{
-		if(pChatWindow) pChatWindow->AddInfoMessage("CONNECTION REJECTED: Bad mod version.");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}CONNECTION REJECTED: Bad mod version.");
 	}
 	else if(byteRejectReason == REJECT_REASON_BAD_PLAYERID)
 	{
-		if(pChatWindow) pChatWindow->AddInfoMessage("CONNECTION REJECTED: Unable to allocate a player slot.");
+		if(pChatWindow) pChatWindow->AddInfoMessage("{81AF66}CONNECTION REJECTED: Unable to allocate a player slot.");
 	}
 
 	pNetGame->GetRakClient()->Disconnect(500);

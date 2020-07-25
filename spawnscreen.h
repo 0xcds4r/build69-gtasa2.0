@@ -8,6 +8,7 @@ public:
 
 	void Render();
 	void Show(bool bShow) { m_bEnabled = bShow; }
+	void PresetsApply();
 
 private:
 	bool	m_bEnabled;

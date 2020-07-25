@@ -210,8 +210,9 @@ uint32_t dwUseHudColors[NUM_RADAR_COLORS];
 
 void SetRadarColor(int nIndex, uint32_t dwColor)
 {
-	if(nIndex < sizeof(dwUseHudColors))
+	if(nIndex < sizeof(dwUseHudColors)) {
 		dwUseHudColors[nIndex] = dwColor;
+	}
 }
 
 void GameResetRadarColors()
@@ -233,6 +234,7 @@ uint32_t TranslateColorCodeToRGBA(int iCode)
 		return 0xE2C063FF;
 	}
 
-	if(iCode < NUM_RADAR_COLORS)
+	if(iCode < NUM_RADAR_COLORS) {
 		return dwUseHudColors[iCode];
+	}
 }

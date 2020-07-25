@@ -18,95 +18,106 @@ CPlayerTags::CPlayerTags()
 	HealthBarBDRColor = ImColor( 0x00, 0x00, 0x00, 0xFF );
 }
 
-CPlayerTags::~CPlayerTags() {}
-
-// допилить
 void CPlayerTags::Render()
 {
-	VECTOR VecPos;
+	if(!pNetGame) {
+		return;
+	}
+
+	if(!pNetGame->m_bShowPlayerTags) {
+		return;
+	}
+
+	CPlayerPool *pPlayerPool = pNetGame->GetPlayerPool();
+	CVehiclePool *pVehiclePool = pNetGame->GetVehiclePool();
+
+	if(!pPlayerPool || !pVehiclePool) {
+		return;
+	}
+
+	CLocalPlayer *pLocalPlayer = pPlayerPool->GetLocalPlayer();
+
+	if(!pLocalPlayer) {
+		return;
+	}
+
+	CPlayerPed *pLocalPed = pLocalPlayer->GetPlayerPed();
+
+	if(!pLocalPed) {
+		return;
+	}
+
 	MATRIX4X4 matLocal, matPlayer;
-	int dwHitEntity;
-	char szNickBuf[50];
 
-	if(pNetGame && pNetGame->m_bShowPlayerTags)
+	pLocalPed->GetMatrix(&matLocal);
+	if(!pLocalPed->IsValidMatrix(matLocal)) {
+		return;
+	}
+
+	for(uint16_t playerId = 0; playerId < MAX_PLAYERS; playerId++)
 	{
-		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
-		pGame->FindPlayerPed()->GetMatrix(&matLocal);
+		if(pPlayerPool->GetSlotState(playerId) != true) {
+			continue;
+		}
 
-		for(PLAYERID playerId = 0; playerId < MAX_PLAYERS; playerId++)
+		CRemotePlayer* pPlayer = pPlayerPool->GetAt(playerId);
+
+		if(!pPlayer) {
+			continue;
+		}
+
+		if(!pPlayer->IsActive() || !pPlayer->m_bShowNameTag) {
+			continue;
+		}
+
+		CPlayerPed* pPlayerPed = pPlayer->GetPlayerPed();
+
+		if(!pPlayerPed) {
+			continue;
+		}
+
+		CAMERA_AIM *pCam = GameGetInternalAim();
+		if(!pCam) {
+			continue;
+		}
+
+		if(pPlayerPed->GetDistanceFromCamera() <= pNetGame->m_fNameTagDrawDistance)
 		{
-			if(pPlayerPool->GetSlotState(playerId) == true)
+			if(!pPlayerPed->IsAdded()) {
+				continue;
+			}
+
+			if(!pPlayerPed->GetRWObject()) {
+				continue;
+			}
+
+			VECTOR VecPos;
+			VecPos.X = 0.0f;
+			VecPos.Y = 0.0f;
+			VecPos.Z = 0.0f;
+			pPlayerPed->GetBonePosition(8, &VecPos);
+
+			if(!pPlayerPed->IsValidVector(VecPos)) {
+				continue;
+			}
+
+			int dwHitEntity = 0;
+
+			if(pNetGame->m_bNameTagLOS) {
+				dwHitEntity = ScriptCommand(&get_line_of_sight, VecPos.X, VecPos.Y, VecPos.Z, pCam->pos1x, pCam->pos1y, pCam->pos1z, 1, 0, 0, 1, 0);
+			}
+
+			if(!pNetGame->m_bNameTagLOS || dwHitEntity)
 			{
-				CRemotePlayer* pPlayer = pPlayerPool->GetAt(playerId);
-
-				if(pPlayer && pPlayer->IsActive() && pPlayer->m_bShowNameTag)
-				{
-					CPlayerPed* pPlayerPed = pPlayer->GetPlayerPed();
-
-					if(pPlayerPed->GetDistanceFromCamera() <= pNetGame->m_fNameTagDrawDistance)
-					{
-						/*if(	pPlayer->GetState() == PLAYER_STATE_DRIVER && 
-							pPlayer->m_pCurrentVehicle &&
-							pPlayer->m_pCurrentVehicle->IsRCVehicle())
-						{
-							pPlayer->m_pCurrentVehicle->GetMatrix(matPlayer);
-							VecPos.X = matPlayer.pos.X;
-							VecPos.Y = matPlayer.pos.Y;
-							VecPos.Z = matPlayer.pos.Z;
-						}
-						else*/
-						{
-							if(!pPlayerPed->IsAdded()) continue;
-							VecPos.X = 0.0f;
-							VecPos.Y = 0.0f;
-							VecPos.Z = 0.0f;
-							pPlayerPed->GetBonePosition(8, &VecPos);
-						}
-
-						CAMERA_AIM *pCam = GameGetInternalAim();
-						if(!pCam) {
-							continue;
-						}
-
-						dwHitEntity = 0;
-
-						if(pNetGame->m_bNameTagLOS)
-						{
-							dwHitEntity = ScriptCommand(&get_line_of_sight, 
-								VecPos.X, VecPos.Y, VecPos.Z,
-								pCam->pos1x, pCam->pos1y, pCam->pos1z,
-								1, 0, 0, 1, 0);
-						}
-
-						if(!pNetGame->m_bNameTagLOS || dwHitEntity)
-						{
-							sprintf(szNickBuf, "%s (%d)", pPlayerPool->GetPlayerName(playerId), playerId);
-							Draw(&VecPos, szNickBuf,
-								pPlayer->GetPlayerColor(),
-								pPlayerPed->GetDistanceFromCamera(),
-								pPlayer->m_fReportedHealth,
-								pPlayer->m_fReportedArmour,
-								pPlayer->IsAFK());
-						}
-					}
-				}
+				char szNickBuf[0xF7];
+				sprintf(szNickBuf, "%s (%d)", pPlayerPool->GetPlayerName(playerId), playerId);
+				Draw(&VecPos, szNickBuf, pPlayer->GetPlayerColor(), pPlayerPed->GetDistanceFromCamera(), pPlayer->m_fReportedHealth, pPlayer->m_fReportedArmour, pPlayer->IsAFK());
 			}
 		}
 	}
 }
 
-
-#pragma pack(1)
-typedef struct _RECT
-{
-	float x; // +0
-	float y; // +4
-	float x1; // +8
-	float y1; // +12
-} RECT, *PRECT;
-
-void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor, 
-	float fDist, float fHealth, float fArmour, bool bAfk)
+void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor, float fDist, float fHealth, float fArmour, bool bAfk)
 {
 	VECTOR TagPos;
 
@@ -116,21 +127,22 @@ void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor,
 	TagPos.Z += 0.25f + (fDist * 0.0475f);
 
 	VECTOR Out;
-	// CSprite::CalcScreenCoors(RwV3d const&,RwV3d*,float *,float *,bool,bool) .text 005C5798 00000150 00000038 00000008 R . . . B . .
+
+	// CSprite::CalcScreenCoors
 	(( void (*)(VECTOR*, VECTOR*, float*, float*, bool, bool))(g_GTASAAdr+0x5C5798+1))(&TagPos, &Out, 0, 0, 0, 0);
 
-	if(Out.Z < 1.0f)
+	if(Out.Z < 1.0f) {
 		return;
+	}
 
-	// name (id)
 	ImVec2 pos = ImVec2(Out.X, Out.Y);
-	pos.x -= ImGui::CalcTextSize(szName).x/2;
-	pGUI->RenderText(pos, __builtin_bswap32(dwColor | (0x000000FF)), true, szName);
+	pos.x -= ImGui::CalcTextSize(szName).x / 2;
+	pGUI->RenderBGText(pGUI->GetFontSize(), pos, __builtin_bswap32(dwColor | (0x000000FF)), true, szName);
 
-	// Health Bar
-	if(fHealth < 0.0f) return;
+	if(fHealth < 0.0f) {
+		return;
+	}
 
-	// округляем
 	Out.X = (float)((int)Out.X);
 	Out.Y = (float)((int)Out.Y);
 
@@ -138,31 +150,35 @@ void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor,
 	HealthBarBGColor = ImColor( 0x4B, 0x0B, 0x14, 0xFF );
 
 	float fWidth = pGUI->ScaleX( 100.0f );
-	float fHeight = pGUI->ScaleY( 13.0f );
-	float fOutline = (float)2;
+	float fHeight = pGUI->ScaleY( 13.75f );
+	float fOutline = 2.0f;
 
 	// top left
 	HealthBarBDR1.x = Out.X - ((fWidth/2) + fOutline);
-	HealthBarBDR1.y = Out.Y + (pGUI->GetFontSize()*1.2f);//35.0f;
+	HealthBarBDR1.y = Out.Y + (pGUI->GetFontSize() * 1.2f);
+
 	// bottom right
 	HealthBarBDR2.x = Out.X + ((fWidth/2) + fOutline);
-	HealthBarBDR2.y = Out.Y + (pGUI->GetFontSize()*1.2f) + fHeight;//48.0f;
+	HealthBarBDR2.y = Out.Y + (pGUI->GetFontSize() * 1.2f) + fHeight;
 
 	// top left
-	HealthBarBG1.x = HealthBarBDR1.x + fOutline;//Out.X - 40.0f;
-	HealthBarBG1.y = HealthBarBDR1.y + fOutline;//Out.Y + 37.0f;
+	HealthBarBG1.x = HealthBarBDR1.x + fOutline;
+	HealthBarBG1.y = HealthBarBDR1.y + fOutline;
+
 	// bottom right
-	HealthBarBG2.x = HealthBarBDR2.x - fOutline;//Out.X + 40.0f;
-	HealthBarBG2.y = HealthBarBDR2.y - fOutline;//Out.Y + 46.0f;
+	HealthBarBG2.x = HealthBarBDR2.x - fOutline;
+	HealthBarBG2.y = HealthBarBDR2.y - fOutline;
 
 	// top left
-	HealthBar1.x = HealthBarBG1.x;//Out.X - 40.0f;
-	HealthBar1.y = HealthBarBG1.y;//Out.Y + 37.0f;
-	// bottom right
-	HealthBar2.y = HealthBarBG2.y;//Out.Y + 46.0f;
+	HealthBar1.x = HealthBarBG1.x;
+	HealthBar1.y = HealthBarBG1.y;
 
-	if (fHealth > 100.0f)
+	// bottom right
+	HealthBar2.y = HealthBarBG2.y;
+
+	if (fHealth >= 100.0f) {
 		fHealth = 100.0f;
+	}
 
 	fHealth *= fWidth/100.0f;
 	fHealth -= (fWidth/2);
@@ -178,9 +194,9 @@ void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor,
 		HealthBar2.y += 13.0f;
 	}
 
-	ImGui::GetOverlayDrawList()->AddRectFilled(HealthBarBDR1, HealthBarBDR2, HealthBarBDRColor);
-	ImGui::GetOverlayDrawList()->AddRectFilled(HealthBarBG1, HealthBarBG2, HealthBarBGColor);
-	ImGui::GetOverlayDrawList()->AddRectFilled(HealthBar1, HealthBar2, HealthBarColor);
+	ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBarBDR1, HealthBarBDR2, HealthBarBDRColor);
+	ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBarBG1, HealthBarBG2, HealthBarBGColor);
+	ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBar1, HealthBar2, HealthBarColor);
 
 	// Armour Bar
 	if(fArmour > 0.0f)
@@ -202,16 +218,30 @@ void CPlayerTags::Draw(VECTOR* vec, char* szName, uint32_t dwColor,
 		fArmour *= fWidth/100.0f;
 		fArmour -= (fWidth/2);
 		HealthBar2.x = Out.X + fArmour;
-		ImGui::GetOverlayDrawList()->AddRectFilled(HealthBarBDR1, HealthBarBDR2, HealthBarBDRColor);
-		ImGui::GetOverlayDrawList()->AddRectFilled(HealthBarBG1, HealthBarBG2, HealthBarBGColor);
-		ImGui::GetOverlayDrawList()->AddRectFilled(HealthBar1, HealthBar2, HealthBarColor);
+
+		ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBarBDR1, HealthBarBDR2, HealthBarBDRColor);
+		ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBarBG1, HealthBarBG2, HealthBarBGColor);
+		ImGui::GetBackgroundDrawList()->AddRectFilled(HealthBar1, HealthBar2, HealthBarColor);
 	}
 
 	// AFK Icon
-	if(bAfk)
+	if(bAfk && m_pAfk_icon && m_pAfk_icon->raster)
 	{
-		// ImVec2 a = ImVec2(HealthBarBDR1.x - (pGUI->GetFontSize()*1.4f), HealthBarBDR1.y);
-		// ImVec2 b = ImVec2(a.x + (pGUI->GetFontSize()*1.3f), a.y + (pGUI->GetFontSize()*1.3f));
-		// ImGui::GetOverlayDrawList()->AddImage((ImTextureID)m_pAfk_icon->raster, a, b);
+		ImVec2 a = ImVec2(HealthBarBDR1.x - (pGUI->GetFontSize()*1.4f), HealthBarBDR1.y);
+		ImVec2 b = ImVec2(a.x + (pGUI->GetFontSize()*1.3f), a.y + (pGUI->GetFontSize()*1.3f));
+
+		stRect rect;
+		stfRect uv;
+		stfRect sRect;
+
+		rect.x1 = a.x;
+		rect.y1 = a.y;
+		rect.x2 = b.x;
+		rect.y2 = b.y;
+		uv.x1 = 0.0f;
+		uv.y1 = 0.0f;
+		uv.x2 = 1.0;
+		uv.y2 = 1.0;
+		// DrawRaster(&rect, COLOR_WHITE, m_pAfk_icon->raster, &uv);
 	}
 }

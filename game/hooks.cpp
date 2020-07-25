@@ -9,6 +9,7 @@
 extern CNetGame *pNetGame;
 extern CGUI *pGUI;
 extern CChatWindow *pChatWindow;
+extern CGame *pGame;
 
 void InitGUI();
 void TryInitialiseSAMP();
@@ -303,7 +304,6 @@ void CPlaceable__InitMatrixArray_Hook()
 	reinterpret_cast<int(*)(unsigned long, unsigned long)>(g_GTASAAdr+0x407F85)(g_GTASAAdr+0x95A988, 10000);
 }
 
-int (*CCustomRoadsignMgr__RenderRoadsignAtomic)(uintptr_t thiz, uintptr_t a2);
 int CCustomRoadsignMgr__RenderRoadsignAtomic_Hook(uintptr_t thiz, uintptr_t a2)
 {
 	// FLog("CCustomRoadsignMgr__RenderRoadsignAtomic_Hook");
@@ -312,7 +312,8 @@ int CCustomRoadsignMgr__RenderRoadsignAtomic_Hook(uintptr_t thiz, uintptr_t a2)
 		return 0;
 	}
 
-	return CCustomRoadsignMgr__RenderRoadsignAtomic(thiz, a2);
+	// 0x5A60DC
+	return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x5A60DC+1))(thiz, a2);
 }
 
 void (*Render2dStuff)();
@@ -327,7 +328,13 @@ void Render2dStuff_Hook()
 	{
 		if(bNetworkInited)
 		{
-			if(pNetGame) {
+			if(pNetGame) 
+			{
+				/*uint32_t pVal = *(uint32_t*)(g_GTASAAdr+0x96B510);
+    			if(pChatWindow) {
+        			pChatWindow->AddDebugMessage("value: %d", pVal);
+   		 		}*/
+
 				pNetGame->Process();
 			}
 		}
@@ -349,6 +356,10 @@ void Render2dStuffAfterFade_Hook()
 void (*TouchEvent)(int, int, int posX, int posY);
 void TouchEvent_Hook(int type, int num, int posX, int posY)
 {
+	if(pChatWindow && posX > 0 && posY > 0) {
+		// pChatWindow->AddDebugMessage("x: %d y: %d", posX, posY);
+	}
+
 	if(bGameInited && pGUI && (pGUI->OnTouchEvent(type, num, posX, posY)) == true) {
 		return TouchEvent(type, num, posX, posY);
 	}
@@ -366,9 +377,235 @@ void InstallSAMPHooks()
 	SetupGameHook(g_GTASAAdr + 0x2697C0, (uintptr_t)TouchEvent_Hook, (uintptr_t*)&TouchEvent);
 }
 
+int CUpsideDownCarCheck__IsCarUpsideDown_Hook(int _thiz, uintptr_t _pVehicle)
+{
+	if (*(uintptr_t*)(_pVehicle + 20) && _pVehicle != -1)
+	{
+		return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x32836C+1))(_thiz, _pVehicle);
+	}
+
+	return 0;
+}
+
+char* RenderQueue__ProcessCommand_Hook(uintptr_t _thiz, uintptr_t _pData)
+{
+	if (!_thiz || !_pData) {
+		return 0;
+	}
+
+	return ((char*(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x1D1FFE + 1))(_thiz, _pData);
+}
+
+int RwFrameAddChild_Hook(int _thiz, int _pData)
+{
+	if(!_thiz || !_pData) {
+		return 0;
+	} 
+
+	return ((int(*)(int, int))(g_GTASAAdr + 0x1D853C+1))(_thiz, _pData);
+}
+
+int RLEDecompress_Hook(int _a1, unsigned int _a2, const char* _a3, unsigned int _a4, unsigned int _a5)
+{
+	if (!_a3) {
+		return 0;
+	}
+
+	return ((int(*)(int, unsigned int, const char*, unsigned int, unsigned int))(g_GTASAAdr + 0x1E7396+1))(_a1, _a2, _a3, _a4, _a5);
+}
+
+int CAnimBlendNode__FindKeyFrame_Hook(uintptr_t _thiz, float _a2, int _a3, int _a4)
+{
+	if (!_thiz || !*((uintptr_t*)_thiz + 4)) {
+		return 0;
+	}
+
+	return ((int(*)(uintptr_t, float, int, int))(g_GTASAAdr + 0x38AF38+1))(_thiz, _a2, _a3, _a4);
+}
+
+int _rwFreeListFreeReal_Hook(int a1, unsigned int a2)
+{
+	if (a1 == 0 || !a1) {
+		return 0;
+	}
+
+	return ((int(*)(int, unsigned int))(g_GTASAAdr + 0x1E488C+1))(a1, a2);
+}
+
+uintptr_t CPlayerPedDataSaveStructure__Construct_Hook(int a1, int a2)
+{
+	if (!a1 || !a2 || !*(int*)a2) {
+		return 0;
+	}
+
+	return ((uintptr_t(*)(int, int))(g_GTASAAdr + 0x484A0E + 1))(a1, a2);
+}
+
+int SetCompAlphaCB_Hook(int a1, char a2)
+{
+	if (!a1) {
+		return 0;
+	}
+
+	return ((int(*)(int, char))(g_GTASAAdr + 0x58A1B0+1))(a1, a2);
+}
+
+int CAnimManager__UncompressAnimation_Hook(uintptr_t _thiz, uintptr_t _a2)
+{
+	if(!_thiz) {
+		return 0;
+	}
+
+	return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x38DD04+1))(_thiz, _a2);
+}
+
+char** (*CPhysical__Add)(uintptr_t _thiz);
+char** CPhysical__Add_Hook(uintptr_t _thiz)
+{
+	if (pNetGame)
+	{
+		CPlayerPed* pPlayerPed = pGame->FindPlayerPed();
+		if (pPlayerPed)
+		{
+			for (size_t i = 0; i < 10; i++)
+			{
+				if (pPlayerPed->m_bObjectSlotUsed[i])
+				{
+					if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
+					{
+						CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
+
+						if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
+							pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
+						{
+							return 0;
+						}
+					}
+				}
+			}
+		}
+
+		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
+
+		if (pPlayerPool)
+		{
+			for (size_t i = 0; i < MAX_PLAYERS; i++)
+			{
+				if (pPlayerPool->GetSlotState(i))
+				{
+					CRemotePlayer* pRemotePlayer = pPlayerPool->GetAt(i);
+					if (pRemotePlayer)
+					{
+						if (pRemotePlayer->GetPlayerPed() && pRemotePlayer->GetPlayerPed()->IsAdded())
+						{
+							pPlayerPed = pRemotePlayer->GetPlayerPed();
+
+							// check attached object valid position
+							for (size_t i = 0; i < 10; i++)
+							{
+								if (pPlayerPed->m_bObjectSlotUsed[i])
+								{
+									if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
+									{
+										CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
+										if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
+											pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
+										{
+											return 0;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return CPhysical__Add(_thiz);
+}
+
+void (*CPhysical__RemoveAndAdd)(uintptr_t _thiz);
+void CPhysical__RemoveAndAdd_Hook(uintptr_t _thiz)
+{
+	if (pNetGame)
+	{
+		CPlayerPed* pPlayerPed = pGame->FindPlayerPed();
+		if (pPlayerPed)
+		{
+			for (size_t i = 0; i < 10; i++)
+			{
+				if (pPlayerPed->m_bObjectSlotUsed[i])
+				{
+					if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
+					{
+						CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
+
+						if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
+							pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
+						{
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
+
+		if (pPlayerPool)
+		{
+			for (size_t i = 0; i < MAX_PLAYERS; i++)
+			{
+				if (pPlayerPool->GetSlotState(i))
+				{
+					CRemotePlayer* pRemotePlayer = pPlayerPool->GetAt(i);
+					if (pRemotePlayer)
+					{
+						if (pRemotePlayer->GetPlayerPed() && pRemotePlayer->GetPlayerPed()->IsAdded())
+						{
+							pPlayerPed = pRemotePlayer->GetPlayerPed();
+
+							// check attached object valid position
+							for (size_t i = 0; i < 10; i++)
+							{
+								if (pPlayerPed->m_bObjectSlotUsed[i])
+								{
+									if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
+									{
+										CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
+										if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
+											pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
+										{
+											return;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return CPhysical__RemoveAndAdd(_thiz);
+}
+
 void InstallCrashFixHooks()
 {
-	SetupGameHook(g_GTASAAdr + 0x5A60DC, (uintptr_t)CCustomRoadsignMgr__RenderRoadsignAtomic_Hook, (uintptr_t*)&CCustomRoadsignMgr__RenderRoadsignAtomic);
+	ARMHook::installMethodHook(g_GTASAAdr + 0x66F5AC, (uintptr_t)CCustomRoadsignMgr__RenderRoadsignAtomic_Hook);
+	ARMHook::installMethodHook(g_GTASAAdr + 0x66EB0C, (uintptr_t)CUpsideDownCarCheck__IsCarUpsideDown_Hook);
+	ARMHook::installMethodHook(g_GTASAAdr + 0x675490, (uintptr_t)RwFrameAddChild_Hook); // 675490
+	ARMHook::installMethodHook(g_GTASAAdr + 0x6701C8, (uintptr_t)RLEDecompress_Hook); // 6701C8
+	ARMHook::installMethodHook(g_GTASAAdr + 0x67213C, (uintptr_t)CAnimBlendNode__FindKeyFrame_Hook); // 67213C
+	ARMHook::installMethodHook(g_GTASAAdr + 0x6787F0, (uintptr_t)_rwFreeListFreeReal_Hook); // 6787F0
+	ARMHook::installMethodHook(g_GTASAAdr + 0x6769F8, (uintptr_t)SetCompAlphaCB_Hook); // 6769F8
+	ARMHook::installMethodHook(g_GTASAAdr + 0x6750D4, (uintptr_t)CAnimManager__UncompressAnimation_Hook); // 6750D4
+
+	ARMHook::installPLTHook(g_GTASAAdr + 0x667CC4, (uintptr_t)CPhysical__Add_Hook, (uintptr_t*)&CPhysical__Add);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x66F4B0, (uintptr_t)CPhysical__RemoveAndAdd_Hook, (uintptr_t*)&CPhysical__RemoveAndAdd);
 }
 
 extern "C" bool NotifyEnterVehicle(VEHICLE_TYPE *_pVehicle)
@@ -476,19 +713,77 @@ int CTouchInterface__IsTouchDown_Hook(uintptr_t thiz, uintptr_t touch)
 	return CTouchInterface__IsTouchDown(thiz, touch);
 }
 
+void (*CGame__Process)();
+void CGame__Process_Hook()
+{
+	CGame__Process();
+
+	if (pNetGame)
+	{
+		CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
+
+		if (pTextDrawPool) {
+			pTextDrawPool->SnapshotProcess();
+		}
+	}
+}
+
+uint16_t gxt_string[0x7F];
+uint16_t* CText__Get_Hook(uintptr_t thiz, const char* text)
+{
+	if (text[0] == 'L' && text[1] == 'G' && text[2] == '_')
+	{
+		const char* code = &text[3];
+		if (!strcmp(code, "LG_")) {
+			CFont::AsciiToGxtChar("LG_05", gxt_string);
+		}
+
+		return gxt_string;
+	}
+
+	return ((uint16_t*(*)(uintptr_t, const char*))(g_GTASAAdr + 0x54DB8C+1))(thiz, text);
+}
+
+uint32_t (*CHudColours__GetIntColour)(uintptr_t thiz, int a2);
+uint32_t CHudColours__GetIntColour_Hook(uintptr_t thiz, int a2)
+{
+	return TranslateColorCodeToRGBA(a2);
+}
+
+void (*CWorld__ProcessPedsAfterPreRender)();
+void CWorld__ProcessPedsAfterPreRender_Hook()
+{
+	CWorld__ProcessPedsAfterPreRender();
+
+	if(pNetGame)
+	{
+		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
+
+		if(pPlayerPool)
+		{
+			pPlayerPool->ProcessAttachedObjects();
+		}
+	}
+}
+
 void InstallGlobalHooks()
 {
 	FLog("InstallGlobalHooks");
 
-	SetupGameHook(g_GTASAAdr + 0x29BFFC, (uintptr_t)MainMenuScreen__Update_Hook, (uintptr_t*)&MainMenuScreen__Update);
-	SetupGameHook(g_GTASAAdr + 0x3F641C, (uintptr_t)Render2dStuff_Hook, (uintptr_t*)&Render2dStuff);
-	SetupGameHook(g_GTASAAdr + 0x266E2C, (uintptr_t)NvFOpen__Hook, (uintptr_t*)&NvFOpen); 
-	SetupGameHook(g_GTASAAdr + 0x2CF610, (uintptr_t)CStream__InitImageList_Hook, (uintptr_t*)&CStream__InitImageList); 
-	SetupGameHook(g_GTASAAdr + 0x46F500, (uintptr_t)CGame__InitialiseRenderWare_Hook, (uintptr_t*)&CGame__InitialiseRenderWare); 
-	SetupGameHook(g_GTASAAdr + 0x3860C4, (uintptr_t)CModelInfo__AddPedModel_Hook, (uintptr_t*)&CModelInfo__AddPedModel);
-	SetupGameHook(g_GTASAAdr + 0x3859E8, (uintptr_t)CModelInfo__AddAtomicModel_Hook, (uintptr_t*)&CModelInfo__AddAtomicModel);
-	SetupGameHook(g_GTASAAdr + 0x40C8B0, (uintptr_t)CPools__Initialise_Hook, (uintptr_t*)&CPools__Initialise);
-	SetupGameHook(g_GTASAAdr + 0x408AD0, (uintptr_t)CPlaceable__InitMatrixArray_Hook, (uintptr_t*)&CPlaceable__InitMatrixArray);
+	ARMHook::installMethodHook(g_GTASAAdr + 0x66E78C, (uintptr_t)CText__Get_Hook);
+
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6625E0, (uintptr_t)MainMenuScreen__Update_Hook, (uintptr_t*)&MainMenuScreen__Update);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x67589C, (uintptr_t)Render2dStuff_Hook, (uintptr_t*)&Render2dStuff);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x672448, (uintptr_t)NvFOpen__Hook, (uintptr_t*)&NvFOpen); 
+	ARMHook::installPLTHook(g_GTASAAdr + 0x674C68, (uintptr_t)CStream__InitImageList_Hook, (uintptr_t*)&CStream__InitImageList); 
+	ARMHook::installPLTHook(g_GTASAAdr + 0x66F2D0, (uintptr_t)CGame__InitialiseRenderWare_Hook, (uintptr_t*)&CGame__InitialiseRenderWare); 
+	ARMHook::installPLTHook(g_GTASAAdr + 0x675D98, (uintptr_t)CModelInfo__AddPedModel_Hook, (uintptr_t*)&CModelInfo__AddPedModel);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x67579C, (uintptr_t)CModelInfo__AddAtomicModel_Hook, (uintptr_t*)&CModelInfo__AddAtomicModel);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x672468, (uintptr_t)CPools__Initialise_Hook, (uintptr_t*)&CPools__Initialise);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x675554, (uintptr_t)CPlaceable__InitMatrixArray_Hook, (uintptr_t*)&CPlaceable__InitMatrixArray);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x66FE58, (uintptr_t)CGame__Process_Hook, (uintptr_t*)&CGame__Process);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x673950, (uintptr_t)CHudColours__GetIntColour_Hook, (uintptr_t*)&CHudColours__GetIntColour);
+	// ARMHook::installPLTHook(g_GTASAAdr + 0x675C68, (uintptr_t)CWorld__ProcessPedsAfterPreRender_Hook, (uintptr_t*)&CWorld__ProcessPedsAfterPreRender);
 
 	// CTaskComplexEnterCarAsDriver
 	// SetupGameHook(g_GTASAAdr + 0x4F6F70, (uintptr_t)CTaskComplexEnterCarAsDriver_Hook, (uintptr_t*)&CTaskComplexEnterCarAsDriver);

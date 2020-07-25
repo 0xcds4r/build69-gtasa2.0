@@ -2,10 +2,12 @@
 #include "game/game.h"
 #include "netgame.h"
 #include "chatwindow.h"
+#include "game/audiostream.h"
 
 extern CGame *pGame;
 extern CNetGame *pNetGame;
 extern CChatWindow *pChatWindow;
+extern CAudioStream *pAudioStream;
 
 void ScrDisplayGameText(RPCParameters *rpcParams)
 {
@@ -1087,6 +1089,198 @@ void ScrTogglePlayerControllable(RPCParameters *rpcParams)
 	pNetGame->GetPlayerPool()->GetLocalPlayer()->GetPlayerPed()->TogglePlayerControllable((int)byteControllable);
 }
 
+void ScrSelectTextDraw(RPCParameters* rpcParams)
+{
+	unsigned char* Data = reinterpret_cast<unsigned char*>(rpcParams->input);
+	int iBitLength = rpcParams->numberOfBitsOfData;
+
+	bool bEnable = false;
+	uint32_t dwColor = 0;
+	RakNet::BitStream bsData(Data, (iBitLength / 8) + 1, false);
+	bsData.Read(bEnable);
+	bsData.Read(dwColor);
+
+	pNetGame->GetTextDrawPool()->SetSelectState(bEnable ? true : false, dwColor);
+}
+
+void ScrShowTextDraw(RPCParameters *rpcParams)
+{
+	FLog("RPC: ScrShowTextDraw");
+	unsigned char* Data = reinterpret_cast<unsigned char *>(rpcParams->input);
+	int iBitLength = rpcParams->numberOfBitsOfData;
+	RakNet::BitStream bsData(Data, (iBitLength/8)+1, false);
+
+	CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
+	if (pTextDrawPool)
+	{
+		uint16_t wTextID;
+		TEXT_DRAW_TRANSMIT TextDrawTransmit;
+		char cText[1024];
+		unsigned short cTextLen = 0;
+		bsData.Read(wTextID);
+		bsData.Read(( char *)&TextDrawTransmit, sizeof(TEXT_DRAW_TRANSMIT));
+		bsData.Read(cTextLen);
+		bsData.Read(cText, cTextLen);
+		cText[cTextLen] = '\0';
+
+		// Log("cText: %s", cText);
+		pTextDrawPool->New(wTextID, &TextDrawTransmit, cText);
+	}
+}
+
+void ScrHideTextDraw(RPCParameters *rpcParams)
+{
+	FLog("RPC: HideTextDraw");
+	unsigned char* Data = reinterpret_cast<unsigned char*>(rpcParams->input);
+	int iBitLength = rpcParams->numberOfBitsOfData;
+	RakNet::BitStream bsData((unsigned char*)Data,(iBitLength/8)+1,false);
+
+	CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
+
+	if (pTextDrawPool)
+	{
+		uint16_t wTextID;
+		bsData.Read(wTextID);
+		pTextDrawPool->Delete(wTextID);
+	}
+}
+
+void ScrEditTextDraw(RPCParameters *rpcParams)
+{
+	FLog("RPC: EditTextDraw");
+	unsigned char* Data = reinterpret_cast<unsigned char*>(rpcParams->input);
+	int iBitLength = rpcParams->numberOfBitsOfData;
+	RakNet::BitStream bsData((unsigned char*)Data,(iBitLength/8)+1,false);
+	CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
+	if (pTextDrawPool)
+	{
+		uint16_t wTextID;
+		char cText[MAX_TEXT_DRAW_LINE];
+		unsigned short cTextLen = 0;
+		bsData.Read(wTextID);
+		bsData.Read(cTextLen);
+		bsData.Read(cText, cTextLen);
+		cText[cTextLen] = '\0';
+		CTextDraw* pText = pTextDrawPool->GetAt(wTextID);
+		if (pText)
+			pText->SetText(cText);
+	}
+}
+
+void ScrPlayAudioStream(RPCParameters* rpcParams)
+{
+	FLog("ScrPlayAudioStream");
+
+	RakNet::BitStream bsData(rpcParams->input, (rpcParams->numberOfBitsOfData / 8) + 1, false);
+
+	char url[0xFF];
+	float x, y, z, distance;
+	uint8_t urlLength, usePos;
+
+	bsData.Read(urlLength);
+	bsData.Read(url, urlLength);
+	url[urlLength] = '\0';
+
+	bsData.Read(x);
+	bsData.Read(y);
+	bsData.Read(z);
+	bsData.Read(distance);
+	bsData.Read(usePos);
+
+	// message
+	if(pChatWindow) {
+		pChatWindow->AddInfoMessage("{81AF66}Audio stream: %s", (char*)url);
+	}
+
+	// audio
+	if(pAudioStream) {
+		pAudioStream->Play((const char*)url, x, y, z, distance, usePos);
+	}
+}
+
+void ScrStopAudioStream(RPCParameters* rpcParams)
+{
+	FLog("ScrStopAudioStream");
+
+	if(pAudioStream) {
+		pAudioStream->Stop(false);
+	}
+}
+
+void ScrSetPlayerAttachedObject(RPCParameters *rpcParams)
+{
+	FLog("RPC: ScrSetPlayerAttachedObject");
+
+	unsigned char* Data = reinterpret_cast<unsigned char*>(rpcParams->input);
+	int iBitLength = rpcParams->numberOfBitsOfData;
+
+	RakNet::BitStream bsData(Data, (iBitLength / 8) + 1, false);
+
+	uint16_t playerId;
+	uint32_t index, model, bone;
+	bool create;
+	VECTOR vecOffset;
+	VECTOR vecRotation;
+	VECTOR vecScale;
+	int32_t materialcolor1, materialcolor2;
+
+	bsData.Read(playerId);
+	bsData.Read(index);
+	bsData.Read(create);
+	bsData.Read(model);
+	bsData.Read(bone);
+	
+	// offset
+	bsData.Read(vecOffset.X);
+	bsData.Read(vecOffset.Y);
+	bsData.Read(vecOffset.Z);
+
+	// rotation
+	bsData.Read(vecRotation.X);
+	bsData.Read(vecRotation.Y);
+	bsData.Read(vecRotation.Z);
+
+	// scale
+	bsData.Read(vecScale.X);
+	bsData.Read(vecScale.Y);
+	bsData.Read(vecScale.Z);
+
+	// materialcolor
+	bsData.Read(materialcolor1);
+	bsData.Read(materialcolor2);
+
+	CPlayerPool *pPlayerPool = pNetGame->GetPlayerPool();
+	if(pPlayerPool)
+	{
+		CPlayerPed *pPlayerPed = nullptr;
+
+		if(playerId == pPlayerPool->GetLocalPlayerID())
+		{
+			pPlayerPed = pPlayerPool->GetLocalPlayer()->GetPlayerPed();
+		}
+		else
+		{
+			CRemotePlayer *pRemotePlayer = pPlayerPool->GetAt(playerId);
+			if(pRemotePlayer)
+			{
+				pPlayerPed = pRemotePlayer->GetPlayerPed();
+			}
+			else
+			{
+				pPlayerPed = nullptr;
+			}
+		}
+
+		if(pPlayerPed)
+		{
+			pPlayerPed->UpdateAttachedObject(
+				create, 
+				index, model, bone, vecOffset, vecRotation, vecScale, materialcolor1, materialcolor2
+			);
+		}
+	}
+}
+
 void RegisterScriptRPCs(RakClientInterface* pRakClient)
 {
 	FLog("Registering ScriptRPC's..");
@@ -1144,6 +1338,18 @@ void RegisterScriptRPCs(RakClientInterface* pRakClient)
 
 	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrTogglePlayerControllable, ScrTogglePlayerControllable);
 	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrAttachObjectToPlayer, ScrAttachObjectToPlayer);
+
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrAttachObjectToPlayer, ScrAttachObjectToPlayer);
+
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ClickTextDraw, ScrSelectTextDraw);
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrShowTextDraw, ScrShowTextDraw);
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrHideTextDraw, ScrHideTextDraw);
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrEditTextDraw, ScrEditTextDraw);
+
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_PlayAudioStream, ScrPlayAudioStream);
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_StopAudioStream, ScrStopAudioStream);
+
+	pRakClient->RegisterAsRemoteProcedureCall(&RPC_ScrSetPlayerAttachedObject, ScrSetPlayerAttachedObject);
 }
 
 void UnRegisterScriptRPCs(RakClientInterface* pRakClient)
@@ -1200,4 +1406,14 @@ void UnRegisterScriptRPCs(RakClientInterface* pRakClient)
 
 	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrPlaySound);
 	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrSetPlayerWantedLevel);
+
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ClickTextDraw);
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrShowTextDraw);
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrHideTextDraw);
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrEditTextDraw);
+
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_PlayAudioStream);
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_StopAudioStream);
+
+	pRakClient->UnregisterAsRemoteProcedureCall(&RPC_ScrSetPlayerAttachedObject);
 }

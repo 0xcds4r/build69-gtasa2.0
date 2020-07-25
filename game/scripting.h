@@ -102,6 +102,10 @@ const SCRIPT_COMMAND point_camera_transverse			= { 0x0920, "ffffffii" };
 const SCRIPT_COMMAND create_object						= { 0x0107, "ifffv" };
 const SCRIPT_COMMAND put_object_at						= { 0x01Bc, "ifff" };
 const SCRIPT_COMMAND destroy_object						= { 0x0108, "i" };
+
+// 	0452: enable_player_control_camera
+const SCRIPT_COMMAND enable_player_control_camera		= { 0x0452, "" };
+
 const SCRIPT_COMMAND set_object_rotation				= { 0x0453, "ifff" };
 const SCRIPT_COMMAND create_pickup						= { 0x0213, "iifffv" };
 const SCRIPT_COMMAND destroy_pickup						= { 0x0215, "i" };

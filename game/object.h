@@ -1,5 +1,16 @@
 #pragma once
 
+typedef struct _ATTACHED_OBJECT
+{
+	int iModel;
+	int iBoneID;
+	VECTOR vecOffset;
+	VECTOR vecRotation;
+	VECTOR vecScale;
+	uint32_t dwMaterialColor1;
+	uint32_t dwMaterialColor2;
+} ATTACHED_OBJECT;
+
 class CObject : public CEntity
 {
 public:

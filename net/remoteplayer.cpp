@@ -330,8 +330,9 @@ bool CRemotePlayer::Spawn(uint8_t byteTeam, unsigned int iSkin, VECTOR *vecPos, 
 			m_dwMarkerID = 0;
 		}
 
-		if(pNetGame->m_iShowPlayerMarkers) 
+		if(pNetGame->m_iShowPlayerMarkers) {
 			pPlayer->ShowMarker(m_PlayerID);
+		}
 
 		m_pPlayerPed = pPlayer;
 		m_fReportedHealth = 100.0f;

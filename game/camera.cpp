@@ -26,7 +26,6 @@ void CCamera::SetPosition(float fX, float fY, float fZ, float fRotationX, float 
 	ScriptCommand(&set_camera_position, fX, fY, fZ, fRotationX, fRotationY, fRotationZ);
 }
 
-
 // 0.3.7
 void CCamera::LookAtPoint(float fX, float fY, float fZ, int iType)
 {

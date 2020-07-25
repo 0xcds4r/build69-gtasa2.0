@@ -25,12 +25,20 @@ class CChatWindow
 	friend class CGUI;
 public:
 	CChatWindow();
-	~CChatWindow();
+	~CChatWindow() {};
 
 	void AddChatMessage(char* szNick, uint32_t dwNickColor, char* szMessage);
 	void AddInfoMessage(char* szFormat, ...);
 	void AddDebugMessage(char* szFormat, ...);
 	void AddClientMessage(uint32_t dwColor, char* szStr);
+
+	void RenderWhenInput();
+	void RenderWhenFree();
+	void ProcessScrolling();
+
+	void ProcessShowing();
+	void ProcessHidding();
+	bool Process();
 
 protected:
 	void Render();
@@ -48,10 +56,13 @@ private:
 	float m_fChatPosX, m_fChatPosY;
 	float m_fChatSizeX, m_fChatSizeY;
 
+	bool m_bChatHidden;
+
 	int m_iMaxMessages;
-	std::list<CHAT_WINDOW_ENTRY> m_ChatWindowEntries;
+	std::list<CHAT_WINDOW_ENTRY> m_ChatWindowEntries, m_ChatWindowEntries2;
 
 	uint32_t m_dwTextColor;
 	uint32_t m_dwInfoColor;
 	uint32_t m_dwDebugColor;
+	uint32_t m_dwLastMessageUpdateTick;
 };
