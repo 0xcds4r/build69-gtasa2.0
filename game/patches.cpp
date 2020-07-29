@@ -49,6 +49,9 @@ void ApplyGlobalPatches()
     ARMHook::makeNOP(g_GTASAAdr + 0x43FE08, 3); // CSprite2d::Draw
     ARMHook::makeNOP(g_GTASAAdr + 0x44095C, 3); // CSprite2d::Draw
 
+    // CStreaming::ms_memoryAvailable from ~CStreaming::Init2
+    ARMHook::makeNOP(g_GTASAAdr+0x46BE18, 1);
+
     // RwCameraEndUpdate
     // ARMHook::makeNOP(g_GTASAAdr + 0x3F6C8C, 2);
 
@@ -144,12 +147,12 @@ void ApplyGlobalPatches()
     ARMHook::writeMemory(g_GTASAAdr + 0x679118, (uintptr_t)"\x3C", 1);
 
     // CStreaming::ms_memoryAvailable patch
-    ARMHook::unprotect(g_GTASAAdr+0x46BE0A);
+    /*ARMHook::unprotect(g_GTASAAdr+0x46BE0A);
     *(uintptr_t*)(g_GTASAAdr+0x46BE0A) = 0x10000000;
     ARMHook::unprotect(g_GTASAAdr+0x46BE10);
     *(uintptr_t*)(g_GTASAAdr+0x46BE10) = 0x10000000;
     ARMHook::unprotect(g_GTASAAdr+0x685FA0);
-    *(uintptr_t*)(g_GTASAAdr+0x685FA0) = 0x10000000;
+    *(uintptr_t*)(g_GTASAAdr+0x685FA0) = 0x10000000;*/
 
     // _rwOpenGLRasterCreate
     ARMHook::writeMemory(g_GTASAAdr + 0x1AE95E, (uintptr_t)"\x01\x22", 2);
@@ -166,8 +169,6 @@ void ApplySCAndPatches()
     *(bool*)(g_SCANDAdr+0x31C149) = true;
 }
 
-#include "chatwindow.h"
-extern CChatWindow* pChatWindow;
 void ApplySAMPPatchesInGame()
 {
 	FLog("ApplySAMPPatchesInGame");

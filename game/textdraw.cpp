@@ -239,22 +239,22 @@ void CTextDraw::SnapshotProcess()
 	
 	if (IsPedModel(m_TextDrawData.wModelID))
 	{ // PED MODEL
-		snapshot = pSnapShotHelper->CreatePedSnapShot(
+		/*snapshot = pSnapShotHelper->CreatePedSnapShot(
 			m_TextDrawData.wModelID,
 			m_TextDrawData.dwBackgroundColor,
 			&m_TextDrawData.vecRot,
-			m_TextDrawData.fZoom);
+			m_TextDrawData.fZoom);*/
 	}
 	else if (m_TextDrawData.wModelID >= 400 && m_TextDrawData.wModelID <= 611)
 	{ // VEHICLE MODEL
-		snapshot = pSnapShotHelper->CreateVehicleSnapShot(
+		/*snapshot = pSnapShotHelper->CreateVehicleSnapShot(
 			m_TextDrawData.wModelID,
 			m_TextDrawData.dwBackgroundColor,
 			&m_TextDrawData.vecRot,
 			m_TextDrawData.fZoom,
 			m_TextDrawData.wColor1,
 			m_TextDrawData.wColor2
-		);
+		);*/
 	}
 	else
 	{ // OBJECT MODEL

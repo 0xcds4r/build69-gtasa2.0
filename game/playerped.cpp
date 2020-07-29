@@ -643,6 +643,8 @@ bool CPlayerPed::GetBoneMatrix(MATRIX4X4 *matOut, int iBoneID)
 
 void CPlayerPed::UpdateAttachedObject(bool create, uint32_t index, uint32_t model, uint32_t bone, VECTOR vecOffset, VECTOR vecRotation, VECTOR vecScale, uint32_t materialcolor1, uint32_t materialcolor2)
 {
+	return;
+
     if(!m_pPed) return;
     if(index < 0 || index >= 10)
         return;
@@ -734,49 +736,7 @@ void CPlayerPed::ProcessAttachedObjects()
 					pObject->SetCollisionChecking(false);
 				}
 
-				if(!bAnimUpdated)
-				{
-					// CEntity::UpdateRpHAnim
-					(( void (*)(ENTITY_TYPE*))(g_GTASAAdr+0x3EBFF6+1))(m_pEntity);
-					bAnimUpdated = true;
-				}
-				
-				((void (*) (ENTITY_TYPE*))(*(void**)(m_pEntity->vtable+16)))(pObject->m_pEntity);
-				
-				int iBoneID = m_pPed->aPedBones[m_AttachedObjectInfo[i].iBoneID]->iNodeId;
-
-				if(GetBoneMatrix(&boneMatrix, iBoneID) == false) {
-					continue;
-				}
-
-				ProjectMatrix(&vecProj, &boneMatrix, &m_AttachedObjectInfo[i].vecOffset);
-				boneMatrix.pos.X = vecProj.X;
-				boneMatrix.pos.Y = vecProj.Y;
-				boneMatrix.pos.Z = vecProj.Z;
-				
-				VECTOR *vecRot = &m_AttachedObjectInfo[i].vecRotation;
-				if(vecRot->X != 0.0f)
-				{
-					RwMatrixRotate(&boneMatrix, 0, vecRot->X);
-				}
-				if(vecRot->Y != 0.0f)
-				{
-					RwMatrixRotate(&boneMatrix, 1, vecRot->Y);
-				}
-				if(vecRot->Z != 0.0f)
-				{
-					RwMatrixRotate(&boneMatrix, 2, vecRot->Z);
-				}
-
-				VECTOR *vecScale = &m_AttachedObjectInfo[i].vecScale;
-			
-				RwMatrixScale(&boneMatrix, vecScale);
-			
-				pObject->SetMatrix(boneMatrix);
-			
-				pObject->UpdateRwMatrixAndFrame();
-				
-				((void (*) (ENTITY_TYPE*))(*(void**)(m_pEntity->vtable+8)))(pObject->m_pEntity);
+				// TODO: will be make it
 			}
 			else
 			{

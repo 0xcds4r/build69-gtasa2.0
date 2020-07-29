@@ -377,86 +377,92 @@ void InstallSAMPHooks()
 	SetupGameHook(g_GTASAAdr + 0x2697C0, (uintptr_t)TouchEvent_Hook, (uintptr_t*)&TouchEvent);
 }
 
+int (*CUpsideDownCarCheck__IsCarUpsideDown)(int _thiz, uintptr_t _pVehicle);
 int CUpsideDownCarCheck__IsCarUpsideDown_Hook(int _thiz, uintptr_t _pVehicle)
 {
 	if (*(uintptr_t*)(_pVehicle + 20) && _pVehicle != -1)
 	{
-		return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x32836C+1))(_thiz, _pVehicle);
+		return CUpsideDownCarCheck__IsCarUpsideDown(_thiz, _pVehicle);
 	}
+
+	FLog("[x / Crash Preventer] CODE #1");
 
 	return 0;
 }
 
-char* RenderQueue__ProcessCommand_Hook(uintptr_t _thiz, uintptr_t _pData)
-{
-	if (!_thiz || !_pData) {
-		return 0;
-	}
-
-	return ((char*(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x1D1FFE + 1))(_thiz, _pData);
-}
-
+int (*RwFrameAddChild)(int _thiz, int _pData);
 int RwFrameAddChild_Hook(int _thiz, int _pData)
 {
 	if(!_thiz || !_pData) {
+		FLog("[x / Crash Preventer] CODE #2");
 		return 0;
 	} 
 
-	return ((int(*)(int, int))(g_GTASAAdr + 0x1D853C+1))(_thiz, _pData);
+	return RwFrameAddChild(_thiz, _pData);
 }
 
+int (*RLEDecompress)(int _a1, unsigned int _a2, const char* _a3, unsigned int _a4, unsigned int _a5);
 int RLEDecompress_Hook(int _a1, unsigned int _a2, const char* _a3, unsigned int _a4, unsigned int _a5)
 {
 	if (!_a3) {
+		FLog("[x / Crash Preventer] CODE #3");
 		return 0;
 	}
 
-	return ((int(*)(int, unsigned int, const char*, unsigned int, unsigned int))(g_GTASAAdr + 0x1E7396+1))(_a1, _a2, _a3, _a4, _a5);
+	return RLEDecompress(_a1, _a2, _a3, _a4, _a5);
 }
 
+int (*CAnimBlendNode__FindKeyFrame)(uintptr_t _thiz, float _a2, int _a3, int _a4);
 int CAnimBlendNode__FindKeyFrame_Hook(uintptr_t _thiz, float _a2, int _a3, int _a4)
 {
 	if (!_thiz || !*((uintptr_t*)_thiz + 4)) {
+		FLog("[x / Crash Preventer] CODE #4");
 		return 0;
 	}
 
-	return ((int(*)(uintptr_t, float, int, int))(g_GTASAAdr + 0x38AF38+1))(_thiz, _a2, _a3, _a4);
+	return CAnimBlendNode__FindKeyFrame(_thiz, _a2, _a3, _a4);
 }
 
+int (*_rwFreeListFreeReal)(int a1, unsigned int a2);
 int _rwFreeListFreeReal_Hook(int a1, unsigned int a2)
 {
 	if (a1 == 0 || !a1) {
+		FLog("[x / Crash Preventer] CODE #5");
 		return 0;
 	}
 
-	return ((int(*)(int, unsigned int))(g_GTASAAdr + 0x1E488C+1))(a1, a2);
+	return _rwFreeListFreeReal(a1, a2);
 }
 
-uintptr_t CPlayerPedDataSaveStructure__Construct_Hook(int a1, int a2)
-{
-	if (!a1 || !a2 || !*(int*)a2) {
-		return 0;
-	}
-
-	return ((uintptr_t(*)(int, int))(g_GTASAAdr + 0x484A0E + 1))(a1, a2);
-}
-
+int (*SetCompAlphaCB)(int a1, char a2);
 int SetCompAlphaCB_Hook(int a1, char a2)
 {
 	if (!a1) {
+		FLog("[x / Crash Preventer] CODE #6");
 		return 0;
 	}
 
-	return ((int(*)(int, char))(g_GTASAAdr + 0x58A1B0+1))(a1, a2);
+	return SetCompAlphaCB(a1, a2);
 }
 
+int (*CAnimManager__UncompressAnimation)(uintptr_t _thiz, uintptr_t _a2);
 int CAnimManager__UncompressAnimation_Hook(uintptr_t _thiz, uintptr_t _a2)
 {
 	if(!_thiz) {
+		FLog("[x / Crash Preventer] CODE #7");
 		return 0;
 	}
 
-	return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x38DD04+1))(_thiz, _a2);
+	return CAnimManager__UncompressAnimation(_thiz, _a2);
+}
+
+void (*CStreaming__Init2)(uintptr_t thiz);
+void CStreaming__Init2_Hook(uintptr_t thiz)
+{
+	CStreaming__Init2(thiz);
+
+	// 685FA0 ; CStreaming::ms_memoryAvailable
+	*(uint32_t*)(g_GTASAAdr + 0x685FA0) = 0x10000000;
 }
 
 char** (*CPhysical__Add)(uintptr_t _thiz);
@@ -595,14 +601,14 @@ void CPhysical__RemoveAndAdd_Hook(uintptr_t _thiz)
 
 void InstallCrashFixHooks()
 {
-	ARMHook::installMethodHook(g_GTASAAdr + 0x66F5AC, (uintptr_t)CCustomRoadsignMgr__RenderRoadsignAtomic_Hook);
-	ARMHook::installMethodHook(g_GTASAAdr + 0x66EB0C, (uintptr_t)CUpsideDownCarCheck__IsCarUpsideDown_Hook);
-	ARMHook::installMethodHook(g_GTASAAdr + 0x675490, (uintptr_t)RwFrameAddChild_Hook); // 675490
-	ARMHook::installMethodHook(g_GTASAAdr + 0x6701C8, (uintptr_t)RLEDecompress_Hook); // 6701C8
-	ARMHook::installMethodHook(g_GTASAAdr + 0x67213C, (uintptr_t)CAnimBlendNode__FindKeyFrame_Hook); // 67213C
-	ARMHook::installMethodHook(g_GTASAAdr + 0x6787F0, (uintptr_t)_rwFreeListFreeReal_Hook); // 6787F0
-	ARMHook::installMethodHook(g_GTASAAdr + 0x6769F8, (uintptr_t)SetCompAlphaCB_Hook); // 6769F8
-	ARMHook::installMethodHook(g_GTASAAdr + 0x6750D4, (uintptr_t)CAnimManager__UncompressAnimation_Hook); // 6750D4
+  	ARMHook::installPLTHook(g_GTASAAdr + 0x66EB0C, (uintptr_t)CUpsideDownCarCheck__IsCarUpsideDown_Hook, (uintptr_t*)&CUpsideDownCarCheck__IsCarUpsideDown); // 66EB0C
+	ARMHook::installPLTHook(g_GTASAAdr + 0x675490, (uintptr_t)RwFrameAddChild_Hook, (uintptr_t*)&RwFrameAddChild); // 675490
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6701C8, (uintptr_t)RLEDecompress_Hook, (uintptr_t*)&RLEDecompress); // 6701C8
+	ARMHook::installPLTHook(g_GTASAAdr + 0x67213C, (uintptr_t)CAnimBlendNode__FindKeyFrame_Hook, (uintptr_t*)&CAnimBlendNode__FindKeyFrame); // 67213C
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6787F0, (uintptr_t)_rwFreeListFreeReal_Hook, (uintptr_t*)&_rwFreeListFreeReal); // 6787F0
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6769F8, (uintptr_t)SetCompAlphaCB_Hook, (uintptr_t*)&SetCompAlphaCB); // 6769F8
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6750D4, (uintptr_t)CAnimManager__UncompressAnimation_Hook, (uintptr_t*)&CAnimManager__UncompressAnimation); // 6750D4
+	ARMHook::installPLTHook(g_GTASAAdr + 0x6700D0, (uintptr_t)CStreaming__Init2_Hook, (uintptr_t*)&CStreaming__Init2); // 6700D0
 
 	ARMHook::installPLTHook(g_GTASAAdr + 0x667CC4, (uintptr_t)CPhysical__Add_Hook, (uintptr_t*)&CPhysical__Add);
 	ARMHook::installPLTHook(g_GTASAAdr + 0x66F4B0, (uintptr_t)CPhysical__RemoveAndAdd_Hook, (uintptr_t*)&CPhysical__RemoveAndAdd);

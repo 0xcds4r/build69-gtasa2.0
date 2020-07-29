@@ -43,10 +43,64 @@ typedef struct _MATRIX4X4
 #pragma pack(1)
 typedef struct _ENTITY_TYPE
 {
-	// ENTITY STUFF
-	uint32_t vtable; 		// 0-4		;vtable
-	PADDING(_pad258, 16); 	// 4-20
-	MATRIX4X4 *mat; // 20-...
+	uint32_t vtable; 			// 0-4		;vtable
+	PADDING(_pad91, 16);		// 4-20
+	MATRIX4X4 *mat; 			// 20-24	;mat
+
+	union {
+		uintptr_t m_pRwObject;
+		uintptr_t m_pRpClump;
+		uintptr_t m_pRpAtomic;
+	}; 							// 24-28
+
+	union {
+		uint32_t m_nEntityFlags;
+		struct {
+			uint32_t m_bUsesCollision : 1;
+			uint32_t m_bCollisionProcessed : 1;
+			uint32_t m_bIsStatic : 1;
+			uint32_t m_bHasContacted : 1;
+			uint32_t m_bIsStuck : 1;
+			uint32_t m_bIsInSafePosition : 1;
+			uint32_t m_bWasPostponed : 1;
+			uint32_t m_bIsVisible : 1;
+
+			uint32_t m_bIsBIGBuilding : 1;
+			uint32_t m_bRenderDamaged : 1;
+			uint32_t m_bStreamingDontDelete : 1;
+			uint32_t m_bRemoveFromWorld : 1;
+			uint32_t m_bHasHitWall : 1;
+			uint32_t m_bImBeingRendered : 1;
+			uint32_t m_bDrawLast :1;
+			uint32_t m_bDistanceFade : 1;
+		 
+			uint32_t m_bDontCastShadowsOn : 1;
+			uint32_t m_bOffscreen : 1;
+			uint32_t m_bIsStaticWaitingForCollision : 1;
+			uint32_t m_bDontStream : 1;
+			uint32_t m_bUnderwater : 1;
+			uint32_t m_bHasPreRenderEffects : 1;
+			uint32_t m_bIsTempBuilding : 1;
+			uint32_t m_bDontUpdateHierarchy : 1;
+		 
+			uint32_t m_bHasRoadsignText : 1;
+			uint32_t m_bDisplayedSuperLowLOD : 1;
+			uint32_t m_bIsProcObject : 1;
+			uint32_t m_bBackfaceCulled : 1;
+			uint32_t m_bLightObject : 1;
+			uint32_t m_bUnimportantStream : 1;
+			uint32_t m_bTunnel : 1;
+			uint32_t m_bTunnelTransition : 1;
+		} nEntityFlags;
+	};  						// 28-32 
+
+	PADDING(_pad92, 6);			// 32-38
+	uint16_t nModelIndex; 		// 38-40
+	PADDING(_pad93, 32);		// 40-72
+	VECTOR vecMoveSpeed; 		// 72-84
+	VECTOR vecTurnSpeed;		// 84-96
+	PADDING(_pad94, 88);		// 96-184
+	uintptr_t dwUnkModelRel; 	// 184-188
 } ENTITY_TYPE;
 
 //-----------------------------------------------------------
@@ -61,8 +115,6 @@ typedef struct
 typedef struct _PED_TYPE
 {
 	ENTITY_TYPE entity; 		// 0000-0184	;entity
-	PADDING(_pad248, 988);
-	AnimBlendFrameData* aPedBones[19];
 } PED_TYPE;
 
 //-----------------------------------------------------------

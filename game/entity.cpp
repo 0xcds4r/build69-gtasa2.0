@@ -547,15 +547,13 @@ void CEntity::SetGravityProcessing(bool bState)
 		return;
 	}
 
-	uintptr_t* ptrTmp = (uintptr_t*)&m_pEntity; 
-
 	if(bState)
 	{
-		ptrTmp[7] |= 0x80000002;
+		*(uint32_t *)((uintptr_t)m_pEntity + 28) |= 0x80000002;
 	}
 	else
 	{
-		ptrTmp[7] &= 0x7FFFFFFD;
+		*(uint32_t *)((uintptr_t)m_pEntity + 28) &= 0x7FFFFFFD;
 	}
 }
 
@@ -576,14 +574,14 @@ void CEntity::SetCollisionChecking(bool bState)
 		return;
 	}
 
-	uintptr_t* ptrTmp = (uintptr_t*)&m_pEntity; 
-
 	if(bState)
 	{
-		ptrTmp[7] |= 1;
+		uintptr_t enablePtr = (uintptr_t)0x180000a3;
+		*(uint32_t *)((uintptr_t)m_pEntity + 28) = (uint32_t)enablePtr;
 	}
 	else
 	{
-		ptrTmp[7] &= 0xFFFFFFFE;
+		uintptr_t disablePtr = (uintptr_t)0x180000a2;
+   		*(uint32_t *)((uintptr_t)m_pEntity + 28) = (uint32_t)disablePtr;
 	}
 }
