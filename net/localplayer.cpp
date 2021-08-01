@@ -324,6 +324,7 @@ void CLocalPlayer::UpdateSurfing() {};
 
 void CLocalPlayer::SendEnterVehicleNotification(VEHICLEID VehicleID, bool bPassenger)
 {
+	// return;
 	RakNet::BitStream bsSend;
 	uint8_t bytePassenger = 0;
 

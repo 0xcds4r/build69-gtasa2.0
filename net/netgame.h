@@ -14,7 +14,6 @@
 #include "objectpool.h"
 #include "pickuppool.h"
 #include "textlabelpool.h"
-#include "textdrawpool.h"
 
 #define GAMESTATE_WAIT_CONNECT	9
 #define GAMESTATE_CONNECTING	13
@@ -52,7 +51,6 @@ public:
 	CPickupPool* GetPickupPool() { return m_pPickupPool; }
 	CGangZonePool* GetGangZonePool() { return m_pGangZonePool; }
 	CText3DLabelsPool* GetLabelPool() { return m_pLabelPool; }
-	CTextDrawPool* GetTextDrawPool() { return m_pTextDrawPool; }
 
 	RakClientInterface* GetRakClient() { return m_pRakClient; };
 
@@ -64,7 +62,6 @@ public:
 	void ResetPickupPool();
 	void ResetGangZonePool();
 	void ResetLabelPool();
-	void ResetTextDrawPool();
 	void ShutDownForGameRestart();
 
 	void SendChatMessage(const char* szMsg);
@@ -87,7 +84,6 @@ private:
 	CPickupPool* 		m_pPickupPool;
 	CGangZonePool*		m_pGangZonePool;
 	CText3DLabelsPool*	m_pLabelPool;
-	CTextDrawPool* 		m_pTextDrawPool;
 
 	int					m_iGameState;
 	uint32_t			m_dwLastConnectAttempt;

@@ -104,14 +104,18 @@ CVehicle* CGame::NewVehicle(int iType, float fPosX, float fPosY, float fPosZ, fl
 
 CObject *CGame::NewObject(int iModel, float fPosX, float fPosY, float fPosZ, VECTOR vecRot, float fDrawDistance)
 {
+	if(!IsValidModelNoRW(iModel)) {
+		return 0;
+	}
+	
 	CObject *pObjectNew = new CObject(iModel, fPosX, fPosY, fPosZ, vecRot, fDrawDistance);
 	return pObjectNew;
 }
 
 uint32_t CGame::CreatePickup(int iModel, int iType, float fX, float fY, float fZ, int* unk)
 {
-	if(!GetModelInfoByID(iModel)) {
-		iModel = 18631;
+	if(!IsValidModelNoRW(iModel)) {
+		return 0;
 	}
 
 	FLog("CreatePickup(%d, %d, %4.f, %4.f, %4.f)", iModel, iType, fX, fY, fZ);

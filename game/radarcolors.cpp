@@ -210,7 +210,7 @@ uint32_t dwUseHudColors[NUM_RADAR_COLORS];
 
 void SetRadarColor(int nIndex, uint32_t dwColor)
 {
-	if(nIndex < sizeof(dwUseHudColors)) {
+	if(nIndex >= 0 && nIndex < NUM_RADAR_COLORS) {
 		dwUseHudColors[nIndex] = dwColor;
 	}
 }
@@ -224,17 +224,22 @@ uint32_t TranslateColorCodeToRGBA(int iCode)
 {
 	switch(iCode)
 	{
-		case 1004:
-		return 0x89A4C440;
+		case 1004: {
+			return 0x89A4C440;
+		}
 
-		case 1005:
-		return 0xAA0000FF;
+		case 1005: {
+			return 0xAA0000FF;
+		}
 
-		case 1006:
-		return 0xE2C063FF;
+		case 1006: {
+			return 0xE2C063FF;
+		}
 	}
 
-	if(iCode < NUM_RADAR_COLORS) {
+	if(iCode >= 0 && iCode < NUM_RADAR_COLORS) {
 		return dwUseHudColors[iCode];
 	}
+
+	return 0xE2C063FF;
 }

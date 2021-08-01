@@ -65,8 +65,9 @@ CGUI::CGUI()
 	ImGui::StyleColorsDark();
 
 	// load fonts
-	char path[0xFF];
+	char path[0xFF] = { 0 };
 	sprintf(path, "%sfonts/arial_bold.ttf", (const char*)(g_GTASAAdr+0x6D687C));
+
 	// cp1251 ranges
 	static const ImWchar ranges[] = 
 	{
@@ -79,6 +80,7 @@ CGUI::CGUI()
 		0x2110, 0x2130,
 		0
 	};
+	
 	FLog("GUI | Loading font: arial_bold.ttf");
 	m_pFont = io.Fonts->AddFontFromFileTTF(path, m_fFontSize, nullptr, ranges);
 	FLog("GUI | ImFont pointer = 0x%X", m_pFont);
@@ -164,14 +166,6 @@ void CGUI::Render()
 		}
 	}
 
-	if(pNetGame)
-	{
-		CTextDrawPool *pTextDrawPool = pNetGame->GetTextDrawPool();
-		if(pTextDrawPool) {
-			pTextDrawPool->Draw();
-		}
-	}
-
 	ImGuiIO& io = ImGui::GetIO();
 
 	ImGui_ImplRenderWare_NewFrame();
@@ -221,13 +215,6 @@ bool CGUI::OnTouchEvent(int type, bool multi, int x, int y)
 			{
 				return true;
 			}
-		}
-	}
-
-	if(pNetGame) 
-	{
-		if(pNetGame->GetTextDrawPool()) {
-			pNetGame->GetTextDrawPool()->OnTouchEvent(type, multi, x, y);
 		}
 	}
 

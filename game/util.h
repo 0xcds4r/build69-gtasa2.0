@@ -29,28 +29,4 @@ void SetScissorRect(void* pRect);
 float DegToRad(float fDegrees);
 // 0.3.7
 float FloatOffset(float f1, float f2);
-
-// ~ added stuff
-uintptr_t GetModelInfoByID(int iModelID);
-uintptr_t ModelInfoCreateInstance(int iModel);
-void RenderClumpOrAtomic(uintptr_t rwObject);
-float GetModelColSphereRadius(int iModel);
-void GetModelColSphereVecCenter(int iModel, VECTOR* vec);
-void DestroyAtomicOrClump(uintptr_t rwObject);
-void DrawTextureUV(uintptr_t texture, RECT* rect, uint32_t dwColor, float *uv);
-
-uintptr_t LoadTextureFromTxd(const char *txd, const char *texture);
-uintptr_t LoadTexture(const char* texname);
-void DeleteRwTexture(uintptr_t pRwTexture);
-
-void calculateAimVector(VECTOR *vec1, VECTOR *vec2);
-
-void ProjectMatrix(VECTOR* vecOut, MATRIX4X4* mat, VECTOR *vecPos);
-void RwMatrixOrthoNormalize(MATRIX4X4 *matIn, MATRIX4X4 *matOut);
-void RwMatrixInvert(MATRIX4X4 *matOut, MATRIX4X4 *matIn);
-void RwMatrixRotate(MATRIX4X4 *mat, int axis, float angle);
-void RwMatrixScale(MATRIX4X4 *matrix, VECTOR *vecScale);
-
-bool IsPointInRect(float x, float y, RECT* rect);
-int GetFreeTextDrawTextureSlot();
-void DestroyTextDrawTexture(int index);
+bool IsValidModelNoRW(unsigned int uiModelID);

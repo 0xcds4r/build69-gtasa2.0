@@ -4,7 +4,6 @@
 
 #include "chatwindow.h"
 #include "spawnscreen.h"
-#include "game/audiostream.h"
 #include "str_obfuscator_no_template.hpp"
 
 #define NETGAME_VERSION 4057
@@ -13,7 +12,6 @@
 extern CGame *pGame;
 extern CSpawnScreen *pSpawnScreen;
 extern CChatWindow *pChatWindow;
-extern CAudioStream *pAudioStream;
 
 int iVehiclePoolProcessFlag = 0;
 int iPickupPoolProcessFlag = 0;
@@ -53,7 +51,6 @@ CNetGame::CNetGame(const char* szHostOrIp, int iPort, const char* szPlayerName, 
 	m_pPickupPool = new CPickupPool();
 	m_pGangZonePool = new CGangZonePool();
 	m_pLabelPool = new CText3DLabelsPool();
-	m_pTextDrawPool = new CTextDrawPool();
 
 	if(!CNetGame::CheckAccessAvailable(szHostOrIp)) {
 		return;
@@ -132,12 +129,6 @@ CNetGame::~CNetGame()
 	{
 		delete m_pLabelPool;
 		m_pLabelPool = nullptr;
-	}
-
-	if(m_pTextDrawPool)
-	{
-		delete m_pTextDrawPool;
-		m_pTextDrawPool = nullptr;
 	}
 }
 
@@ -390,15 +381,6 @@ void CNetGame::ResetLabelPool()
 	m_pLabelPool = new CText3DLabelsPool();
 }
 
-void CNetGame::ResetTextDrawPool()
-{
-	FLog("ResetTextDrawPool");
-	if(m_pTextDrawPool)
-		delete m_pTextDrawPool;
-
-	m_pTextDrawPool = new CTextDrawPool();
-}
-
 void CNetGame::ShutDownForGameRestart()
 {
 	if(pChatWindow) {
@@ -432,7 +414,6 @@ void CNetGame::ShutDownForGameRestart()
 	ResetPickupPool();
 	ResetGangZonePool();
 	ResetLabelPool();
-	ResetTextDrawPool();
 
 	m_bDisableEnterExits = false;
 	m_fNameTagDrawDistance = 60.0f;
@@ -588,10 +569,6 @@ void CNetGame::Packet_DisconnectionNotification(Packet* pkt)
 	if(pChatWindow)
 		pChatWindow->AddDebugMessage("Server closed the connection.");
 	m_pRakClient->Disconnect(2000);
-
-	if(pAudioStream) {
-    	pAudioStream->Stop(true);
-	}
 }
 
 void CNetGame::Packet_ConnectionLost(Packet* pkt)
@@ -607,10 +584,6 @@ void CNetGame::Packet_ConnectionLost(Packet* pkt)
 	{
 		CRemotePlayer *pPlayer = m_pPlayerPool->GetAt(playerId);
 		if(pPlayer) m_pPlayerPool->Delete(playerId, 0);
-	}
-
-	if(pAudioStream) {
-    	pAudioStream->Stop(true);
 	}
 
 	SetGameState(GAMESTATE_WAIT_CONNECT);

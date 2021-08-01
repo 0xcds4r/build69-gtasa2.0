@@ -132,7 +132,7 @@ void ARMHook::InjectCode(uintptr_t addr, uintptr_t func, int reg)
 
 void ARMHook::makeRET(uintptr_t addr)
 {
-    ARMHook::writeMemory(addr, (uintptr_t)"\xF7\x46", 2);
+    ARMHook::writeMemory(addr, (uintptr_t)"\x00\x20\xF7\x46", 4);
 }
 
 void SetupGameHook(uintptr_t addr, uintptr_t func, uintptr_t *orig)

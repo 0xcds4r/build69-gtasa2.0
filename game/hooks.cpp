@@ -30,13 +30,6 @@ typedef struct _PED_MODEL
 PED_MODEL PedsModels[315];
 int PedsModelsCount = 0;
 
-struct _ATOMIC_MODEL
-{
-	uintptr_t func_tbl;
-	char data[56];
-};
-extern struct _ATOMIC_MODEL* ATOMIC_MODELS;
-
 extern "C" uintptr_t get_lib() 
 {
  	return g_GTASAAdr;
@@ -50,29 +43,57 @@ struct stFile
 	FILE *f;
 };
 
-stFile* (*NvFOpen)(const char*, const char*, int, int);
-stFile* NvFOpen__Hook(const char* r0, const char* r1, int r2, int r3)
+stFile* (*OS_FileOpen)(int a1, unsigned int a2, char *path, int a4);
+stFile* OS_FileOpen_hook(int a1, unsigned int a2, char *path, int a4)
 {
-	char path[0xFF] = { 0 };
+	char path_new[0xFF] = { 0 };
 
-	// scm & img in apk
+	const char* g_pszStorage = (const char*)(g_GTASAAdr+0x6D687C);
 
-	if (!strncmp(r1, "DATA/PEDS.IDE", 13))
-	{
-		sprintf(path, "%s/SAMP/peds.ide", (const char*)(g_GTASAAdr+0x6D687C));
-		FLog("Loading peds.ide..");
-		goto open;
-	}
-	// ----------------------------
-	if (!strncmp(r1, "DATA/GTA.DAT", 12))
-	{
-		sprintf(path, "%s/SAMP/gta.dat", (const char*)(g_GTASAAdr+0x6D687C));
-		FLog("Loading gta.dat..");
-		goto open;
-	}
+	if ( !strncmp(path, "data\\script\\mainV1.scm", 0x16) )
+  	{
+  		sprintf(path_new, "%sSAMP/main.scm", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "DATA\\SCRIPT\\SCRIPTV1.IMG", 0x18) )
+  	{
+  		sprintf(path_new, "%sSAMP/script.img", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "DATA\\GTA.DAT", 0xC) )
+  	{
+  		sprintf(path_new, "%sSAMP/gta.dat", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "DATA\\PEDS.IDE", 0xD) )
+  	{
+  		sprintf(path_new, "%sSAMP/peds.ide", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "DATA\\TIMECYC.DAT", 0x10) )
+  	{
+  		sprintf(path_new, "%sSAMP/timecyc.dat", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "data\\paths\\tracks2.dat", 0x15) )
+  	{
+  		sprintf(path_new, "%sSAMP/tracks2.dat", g_pszStorage);
+  		goto orig;
+  	}
+
+  	if ( !strncmp(path, "data\\paths\\tracks4.dat", 0x15) )
+  	{
+  		sprintf(path_new, "%sSAMP/tracks4.dat", g_pszStorage);
+  		goto orig;
+  	}
 
 orig:
-	return NvFOpen(r0, r1, r2, r3);
+	return OS_FileOpen(a1, a2, path, a4);
 
 open:
 	stFile *st = (stFile*)malloc(8);
@@ -93,24 +114,9 @@ open:
 	}
 }
 
-// bydlocode
-/*void (*CFileMgr__Initialise)(uintptr_t thiz);
-void CFileMgr__Initialise_Hook(uintptr_t thiz)
-{
-	uintptr_t zipStorage = ((uintptr_t(*)(const char*))(g_GTASAAdr + 0x26FE55))("/Android/data/com.rockstargames.gtasa/samp.obb");
-
-	if(zipStorage) {
-		((int (*)(uintptr_t))(g_GTASAAdr + 0x26FF71))(zipStorage);
-	}
-   
-	return CFileMgr__Initialise(thiz);
-}*/
-
 void (*CStream__InitImageList)();
 void CStream__InitImageList_Hook()
 {
-	// FLog("CStream__InitImageList_Hook");
-
 	// fuck
 	ARMHook::unprotect(g_GTASAAdr + 0x792DA8);
 	ARMHook::unprotect(g_GTASAAdr + 0x792DA4);
@@ -149,8 +155,8 @@ void CStream__InitImageList_Hook()
 	// CStreaming::AddImageToList
 	((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\GTA3.IMG", 1);
 	((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\GTA_INT.IMG", 1);
-	((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\SAMP.IMG", 1);
-	((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\SAMPCOL.IMG", 1);
+	// ((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\SAMP.IMG", 1);
+	// ((uint32_t(*)(char*, uint32_t))(g_GTASAAdr + 0x2CF761))("TEXDB\\SAMPCOL.IMG", 1);
 }
 
 void (*CGame__InitialiseRenderWare)();
@@ -161,7 +167,7 @@ void CGame__InitialiseRenderWare_Hook()
 	CGame__InitialiseRenderWare();
 
 	// TextureDatabaseRuntime::Load()
-	((void (*)(const char*, int, int))(g_GTASAAdr + 0x1EA8E5))("samp", 0, 5);
+	// ((void (*)(const char*, int, int))(g_GTASAAdr + 0x1EA8E5))("samp", 0, 5);
 
 	// Initialise GUI
 	InitGUI();
@@ -185,135 +191,6 @@ PED_MODEL* CModelInfo__AddPedModel_Hook(int id)
 
 	PedsModelsCount++;
 	return model;
-}
-
-uintptr_t (*CModelInfo__AddAtomicModel)(int iModel);
-uintptr_t CModelInfo__AddAtomicModel_Hook(int iModel)
-{
-	// FLog("CModelInfo__AddAtomicModel_Hook");
-
-	uint32_t iCount = *(uint32_t*)(g_GTASAAdr + 0x820738);
-	_ATOMIC_MODEL* model = &ATOMIC_MODELS[iCount];
-	*(uint32_t*)(g_GTASAAdr + 0x820738) = iCount + 1;
-
-	// CClumpModelInfo::CClumpModelInit()
-	((void(*)(_ATOMIC_MODEL*))(*(uintptr_t*)(model->func_tbl + 0x1C)))(model);
-
-	_ATOMIC_MODEL** ms_modelInfoPtrs = (_ATOMIC_MODEL**)(g_GTASAAdr + 0x91DCB8); // CModelInfo::ms_modelInfoPtrs
-	ms_modelInfoPtrs[iModel] = model;
-	return (uintptr_t)model;
-}
-
-void (*CPools__Initialise)();
-void CPools__Initialise_Hook()
-{
-	// FLog("CPools__Initialise_Hook");
-
-	struct PoolAllocator {
-
-		struct Pool {
-			void* objects;
-			uint8_t* flags;
-			uint32_t count;
-			uint32_t top;
-			uint32_t bInitialized;
-		};
-		static_assert(sizeof(Pool) == 0x14);
-
-		static Pool* Allocate(size_t count, size_t size) {
-
-			Pool* p = new Pool;
-
-			p->objects = new char[size * count];
-			p->flags = new uint8_t[count];
-			p->count = count;
-			p->top = 0xFFFFFFFF;
-			p->bInitialized = 1;
-
-			for (size_t i = 0; i < count; i++) {
-				p->flags[i] |= 0x80;
-				p->flags[i] &= 0x80;
-			}
-
-			return p;
-		}
-	};
-
-	// 600000 / 75000 = 8
-	static auto ms_pPtrNodeSingleLinkPool = PoolAllocator::Allocate(100000, 8);		// 75000
-	// 72000 / 6000 = 12
-	static auto ms_pPtrNodeDoubleLinkPool = PoolAllocator::Allocate(60000, 12);	// 6000
-	// 10000 / 500 = 20
-	static auto ms_pEntryInfoNodePool = PoolAllocator::Allocate(20000, 20);	// 500
-	// 279440 / 140 = 1996
-	static auto ms_pPedPool = PoolAllocator::Allocate(240, 1996);	// 140
-	// 286440 / 110 = 2604
-	static auto ms_pVehiclePool = PoolAllocator::Allocate(2000, 2604);	// 110
-	// 840000 / 14000 = 60
-	static auto ms_pBuildingPool = PoolAllocator::Allocate(20000, 60);	// 14000
-	// 147000 / 350 = 420
-	static auto ms_pObjectPool = PoolAllocator::Allocate(3000, 420);	// 350
-	// 210000 / 3500 = 60
-	static auto ms_pDummyPool = PoolAllocator::Allocate(40000, 60);	// 3500
-	// 487200 / 10150 = 48
-	static auto ms_pColModelPool = PoolAllocator::Allocate(50000, 48);	// 10150
-	// 64000 / 500 = 128
-	static auto ms_pTaskPool = PoolAllocator::Allocate(5000, 128);	// 500
-	// 13600 / 200 = 68
-	static auto ms_pEventPool = PoolAllocator::Allocate(1000, 68);	// 200
-	// 6400 / 64 = 100
-	static auto ms_pPointRoutePool = PoolAllocator::Allocate(200, 100);	// 64
-	// 13440 / 32 = 420
-	static auto ms_pPatrolRoutePool = PoolAllocator::Allocate(200, 420);	// 32
-	// 2304 / 64 = 36
-	static auto ms_pNodeRoutePool = PoolAllocator::Allocate(200, 36);	// 64
-	// 512 / 16 = 32
-	static auto ms_pTaskAllocatorPool = PoolAllocator::Allocate(3000, 32);	// 16
-	// 92960 / 140 = 664
-	static auto ms_pPedIntelligencePool = PoolAllocator::Allocate(240, 664);	// 140
-	// 15104 / 64 = 236
-	static auto ms_pPedAttractorPool = PoolAllocator::Allocate(200, 236);	// 64
-
-	*(PoolAllocator::Pool**)(g_GTASAAdr + 0x95AC38) = ms_pPtrNodeSingleLinkPool; // ms_pPtrNodeSingleLinkPool
-	uintptr_t g_pPool = g_GTASAAdr + 0x95AC38;
-
-	*(PoolAllocator::Pool**)(g_pPool + 4) = ms_pPtrNodeDoubleLinkPool; // ms_pPtrNodeDoubleLinkPool
-	*(PoolAllocator::Pool**)(g_pPool + 8) = ms_pEntryInfoNodePool; // ms_pEntryInfoNodePool
-	*(PoolAllocator::Pool**)(g_pPool + 12) = ms_pPedPool; // ms_pPedPool
-	*(PoolAllocator::Pool**)(g_pPool + 16) = ms_pVehiclePool; // ms_pVehiclePool
-	*(PoolAllocator::Pool**)(g_pPool + 20) = ms_pBuildingPool; // ms_pBuildingPool
-	*(PoolAllocator::Pool**)(g_pPool + 24) = ms_pObjectPool; // ms_pObjectPool
-	*(PoolAllocator::Pool**)(g_pPool + 28) = ms_pDummyPool; // ms_pDummyPool
-	*(PoolAllocator::Pool**)(g_pPool + 32) = ms_pColModelPool; // ms_pColModelPool
-	*(PoolAllocator::Pool**)(g_pPool + 36) = ms_pTaskPool; // ms_pTaskPool
-	*(PoolAllocator::Pool**)(g_pPool + 40) = ms_pEventPool; // ms_pEventPool
-	*(PoolAllocator::Pool**)(g_pPool + 44) = ms_pPointRoutePool; // ms_pPointRoutePool
-	*(PoolAllocator::Pool**)(g_pPool + 48) = ms_pPatrolRoutePool; // ms_pPatrolRoutePool
-	*(PoolAllocator::Pool**)(g_pPool + 52) = ms_pNodeRoutePool; // ms_pNodeRoutePool
-	*(PoolAllocator::Pool**)(g_pPool + 56) = ms_pTaskAllocatorPool; // ms_pTaskAllocatorPool
-	*(PoolAllocator::Pool**)(g_pPool + 60) = ms_pPedIntelligencePool; // ms_pPedIntelligencePool
-	*(PoolAllocator::Pool**)(g_pPool + 64) = ms_pPedAttractorPool; // ms_pPedAttractorPool
-}
-
-void (*CPlaceable__InitMatrixArray)();
-void CPlaceable__InitMatrixArray_Hook()
-{
-	// FLog("CPlaceable__InitMatrixArray_Hook");
-	
-	// CMatrixLinkList::Init
-	reinterpret_cast<int(*)(unsigned long, unsigned long)>(g_GTASAAdr+0x407F85)(g_GTASAAdr+0x95A988, 10000);
-}
-
-int CCustomRoadsignMgr__RenderRoadsignAtomic_Hook(uintptr_t thiz, uintptr_t a2)
-{
-	// FLog("CCustomRoadsignMgr__RenderRoadsignAtomic_Hook");
-
-	if(!thiz) {
-		return 0;
-	}
-
-	// 0x5A60DC
-	return ((int(*)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x5A60DC+1))(thiz, a2);
 }
 
 void (*Render2dStuff)();
@@ -377,259 +254,22 @@ void InstallSAMPHooks()
 	SetupGameHook(g_GTASAAdr + 0x2697C0, (uintptr_t)TouchEvent_Hook, (uintptr_t*)&TouchEvent);
 }
 
-int (*CUpsideDownCarCheck__IsCarUpsideDown)(int _thiz, uintptr_t _pVehicle);
-int CUpsideDownCarCheck__IsCarUpsideDown_Hook(int _thiz, uintptr_t _pVehicle)
+bool NotifyEnterVehicle(VEHICLE_TYPE *_pVehicle)
 {
-	if (*(uintptr_t*)(_pVehicle + 20) && _pVehicle != -1)
-	{
-		return CUpsideDownCarCheck__IsCarUpsideDown(_thiz, _pVehicle);
-	}
-
-	FLog("[x / Crash Preventer] CODE #1");
-
-	return 0;
-}
-
-int (*RwFrameAddChild)(int _thiz, int _pData);
-int RwFrameAddChild_Hook(int _thiz, int _pData)
-{
-	if(!_thiz || !_pData) {
-		FLog("[x / Crash Preventer] CODE #2");
-		return 0;
-	} 
-
-	return RwFrameAddChild(_thiz, _pData);
-}
-
-int (*RLEDecompress)(int _a1, unsigned int _a2, const char* _a3, unsigned int _a4, unsigned int _a5);
-int RLEDecompress_Hook(int _a1, unsigned int _a2, const char* _a3, unsigned int _a4, unsigned int _a5)
-{
-	if (!_a3) {
-		FLog("[x / Crash Preventer] CODE #3");
-		return 0;
-	}
-
-	return RLEDecompress(_a1, _a2, _a3, _a4, _a5);
-}
-
-int (*CAnimBlendNode__FindKeyFrame)(uintptr_t _thiz, float _a2, int _a3, int _a4);
-int CAnimBlendNode__FindKeyFrame_Hook(uintptr_t _thiz, float _a2, int _a3, int _a4)
-{
-	if (!_thiz || !*((uintptr_t*)_thiz + 4)) {
-		FLog("[x / Crash Preventer] CODE #4");
-		return 0;
-	}
-
-	return CAnimBlendNode__FindKeyFrame(_thiz, _a2, _a3, _a4);
-}
-
-int (*_rwFreeListFreeReal)(int a1, unsigned int a2);
-int _rwFreeListFreeReal_Hook(int a1, unsigned int a2)
-{
-	if (a1 == 0 || !a1) {
-		FLog("[x / Crash Preventer] CODE #5");
-		return 0;
-	}
-
-	return _rwFreeListFreeReal(a1, a2);
-}
-
-int (*SetCompAlphaCB)(int a1, char a2);
-int SetCompAlphaCB_Hook(int a1, char a2)
-{
-	if (!a1) {
-		FLog("[x / Crash Preventer] CODE #6");
-		return 0;
-	}
-
-	return SetCompAlphaCB(a1, a2);
-}
-
-int (*CAnimManager__UncompressAnimation)(uintptr_t _thiz, uintptr_t _a2);
-int CAnimManager__UncompressAnimation_Hook(uintptr_t _thiz, uintptr_t _a2)
-{
-	if(!_thiz) {
-		FLog("[x / Crash Preventer] CODE #7");
-		return 0;
-	}
-
-	return CAnimManager__UncompressAnimation(_thiz, _a2);
-}
-
-void (*CStreaming__Init2)(uintptr_t thiz);
-void CStreaming__Init2_Hook(uintptr_t thiz)
-{
-	CStreaming__Init2(thiz);
-
-	// 685FA0 ; CStreaming::ms_memoryAvailable
-	*(uint32_t*)(g_GTASAAdr + 0x685FA0) = 0x10000000;
-}
-
-char** (*CPhysical__Add)(uintptr_t _thiz);
-char** CPhysical__Add_Hook(uintptr_t _thiz)
-{
-	if (pNetGame)
-	{
-		CPlayerPed* pPlayerPed = pGame->FindPlayerPed();
-		if (pPlayerPed)
-		{
-			for (size_t i = 0; i < 10; i++)
-			{
-				if (pPlayerPed->m_bObjectSlotUsed[i])
-				{
-					if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
-					{
-						CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
-
-						if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
-							pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
-						{
-							return 0;
-						}
-					}
-				}
-			}
-		}
-
-		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
-
-		if (pPlayerPool)
-		{
-			for (size_t i = 0; i < MAX_PLAYERS; i++)
-			{
-				if (pPlayerPool->GetSlotState(i))
-				{
-					CRemotePlayer* pRemotePlayer = pPlayerPool->GetAt(i);
-					if (pRemotePlayer)
-					{
-						if (pRemotePlayer->GetPlayerPed() && pRemotePlayer->GetPlayerPed()->IsAdded())
-						{
-							pPlayerPed = pRemotePlayer->GetPlayerPed();
-
-							// check attached object valid position
-							for (size_t i = 0; i < 10; i++)
-							{
-								if (pPlayerPed->m_bObjectSlotUsed[i])
-								{
-									if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
-									{
-										CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
-										if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
-											pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
-										{
-											return 0;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return CPhysical__Add(_thiz);
-}
-
-void (*CPhysical__RemoveAndAdd)(uintptr_t _thiz);
-void CPhysical__RemoveAndAdd_Hook(uintptr_t _thiz)
-{
-	if (pNetGame)
-	{
-		CPlayerPed* pPlayerPed = pGame->FindPlayerPed();
-		if (pPlayerPed)
-		{
-			for (size_t i = 0; i < 10; i++)
-			{
-				if (pPlayerPed->m_bObjectSlotUsed[i])
-				{
-					if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
-					{
-						CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
-
-						if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
-							pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
-						{
-							return;
-						}
-					}
-				}
-			}
-		}
-
-		CPlayerPool* pPlayerPool = pNetGame->GetPlayerPool();
-
-		if (pPlayerPool)
-		{
-			for (size_t i = 0; i < MAX_PLAYERS; i++)
-			{
-				if (pPlayerPool->GetSlotState(i))
-				{
-					CRemotePlayer* pRemotePlayer = pPlayerPool->GetAt(i);
-					if (pRemotePlayer)
-					{
-						if (pRemotePlayer->GetPlayerPed() && pRemotePlayer->GetPlayerPed()->IsAdded())
-						{
-							pPlayerPed = pRemotePlayer->GetPlayerPed();
-
-							// check attached object valid position
-							for (size_t i = 0; i < 10; i++)
-							{
-								if (pPlayerPed->m_bObjectSlotUsed[i])
-								{
-									if ((uintptr_t)pPlayerPed->m_pAttachedObjects[i]->m_pEntity == _thiz)
-									{
-										CObject* pObject = pPlayerPed->m_pAttachedObjects[i];
-										if (pObject->m_pEntity->mat->pos.X > 20000.0f || pObject->m_pEntity->mat->pos.Y > 20000.0f || pObject->m_pEntity->mat->pos.Z > 20000.0f ||
-											pObject->m_pEntity->mat->pos.X < -20000.0f || pObject->m_pEntity->mat->pos.Y < -20000.0f || pObject->m_pEntity->mat->pos.Z < -20000.0f)
-										{
-											return;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return CPhysical__RemoveAndAdd(_thiz);
-}
-
-void InstallCrashFixHooks()
-{
-  	ARMHook::installPLTHook(g_GTASAAdr + 0x66EB0C, (uintptr_t)CUpsideDownCarCheck__IsCarUpsideDown_Hook, (uintptr_t*)&CUpsideDownCarCheck__IsCarUpsideDown); // 66EB0C
-	ARMHook::installPLTHook(g_GTASAAdr + 0x675490, (uintptr_t)RwFrameAddChild_Hook, (uintptr_t*)&RwFrameAddChild); // 675490
-	ARMHook::installPLTHook(g_GTASAAdr + 0x6701C8, (uintptr_t)RLEDecompress_Hook, (uintptr_t*)&RLEDecompress); // 6701C8
-	ARMHook::installPLTHook(g_GTASAAdr + 0x67213C, (uintptr_t)CAnimBlendNode__FindKeyFrame_Hook, (uintptr_t*)&CAnimBlendNode__FindKeyFrame); // 67213C
-	ARMHook::installPLTHook(g_GTASAAdr + 0x6787F0, (uintptr_t)_rwFreeListFreeReal_Hook, (uintptr_t*)&_rwFreeListFreeReal); // 6787F0
-	ARMHook::installPLTHook(g_GTASAAdr + 0x6769F8, (uintptr_t)SetCompAlphaCB_Hook, (uintptr_t*)&SetCompAlphaCB); // 6769F8
-	ARMHook::installPLTHook(g_GTASAAdr + 0x6750D4, (uintptr_t)CAnimManager__UncompressAnimation_Hook, (uintptr_t*)&CAnimManager__UncompressAnimation); // 6750D4
-	ARMHook::installPLTHook(g_GTASAAdr + 0x6700D0, (uintptr_t)CStreaming__Init2_Hook, (uintptr_t*)&CStreaming__Init2); // 6700D0
-
-	ARMHook::installPLTHook(g_GTASAAdr + 0x667CC4, (uintptr_t)CPhysical__Add_Hook, (uintptr_t*)&CPhysical__Add);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x66F4B0, (uintptr_t)CPhysical__RemoveAndAdd_Hook, (uintptr_t*)&CPhysical__RemoveAndAdd);
-}
-
-extern "C" bool NotifyEnterVehicle(VEHICLE_TYPE *_pVehicle)
-{
-    //Log("NotifyEnterVehicle");
- 
+    FLog("NotifyEnterVehicle");
+ 	
     if(!pNetGame) {
     	return false;
     } 
-    	
+    
     CVehiclePool *pVehiclePool = pNetGame->GetVehiclePool();
     if(!pVehiclePool) {
     	return false;
     }
- 
+
     CVehicle *pVehicle = nullptr;
     VEHICLEID VehicleID = pVehiclePool->FindIDFromGtaPtr(_pVehicle);
- 
+
     if(VehicleID <= 0 || VehicleID >= MAX_VEHICLES) {
     	return false;
     }
@@ -642,42 +282,50 @@ extern "C" bool NotifyEnterVehicle(VEHICLE_TYPE *_pVehicle)
     if(!pVehicle) {
     	return false;
     }
-
-    ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&pVehicle->m_pVehicle->entity;
- 	if(!g_pEntity) {
- 		return false;
- 	}
-
-    if(*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_PASSENGER) {
-    	return false;
-    }
- 
- 	uintptr_t pTemp = *(uintptr_t *)((uintptr_t)pVehicle->m_pVehicle + 1124); 
- 	uint32_t dwPedType = *(uint32_t *)(pTemp + 1436);
-
-    if(pVehicle->m_pVehicle->pDriver && dwPedType != 0) {
-        return false;
-    }
  
     CLocalPlayer *pLocalPlayer = pNetGame->GetPlayerPool()->GetLocalPlayer();
  	
  	if(pLocalPlayer) {
+ 		FLog("Vehicle ID: %d", VehicleID);
     	pLocalPlayer->SendEnterVehicleNotification(VehicleID, false);
  	}
  
     return true;
 }
 
-void (*CTaskComplexEnterCarAsDriver)(uint32_t thiz, uint32_t pVehicle);
-extern "C" void call_taskEnterCarAsDriver(uintptr_t a, uint32_t b)
+extern "C" bool TaskEnterVehicle(uintptr_t pVehicle, uintptr_t a2)
 {
-	CTaskComplexEnterCarAsDriver(a, b);
+	FLog("TaskEnterVehicle");
+
+	if(!NotifyEnterVehicle((VEHICLE_TYPE*)pVehicle)) {
+		return false;
+	}
+
+	// CTask::operator new
+	uintptr_t pTask = ((uintptr_t (*)(void))(g_GTASAAdr + 0x4D6A01))(); 
+
+	// CTaskComplexEnterCarAsDriver::CTaskComplexEnterCarAsDriver
+  	((void (__fastcall *)(uintptr_t, uintptr_t))(g_GTASAAdr + 0x4F6F71))(pTask, pVehicle); 
+
+  	// CTaskManager::SetTask
+  	((int (__fastcall *)(uintptr_t, uintptr_t, int, int))(g_GTASAAdr + 0x53390B))(a2, pTask, 3, 0); 
+
+	return true;
 }
 
-void __attribute__((naked)) CTaskComplexEnterCarAsDriver_hook(uint32_t thiz, uint32_t pVehicle)
+void __attribute__((naked)) TaskEnterVehicle_hook(uintptr_t thiz, uintptr_t pVehicle)
 {
-	// todo: to 2.0
-    __asm__ volatile("");
+	// 2.0
+	__asm__ volatile("push {r1-r11, lr}\n\t"
+		"mov r0, r8\n\t"
+		"adds r1, r6, #4\n\t"
+		"blx TaskEnterVehicle\n\t"
+		"pop {r1-r11, lr}\n\t"
+		"blx get_lib\n\t"
+		"add r0, #0x400000\n\t"
+        "add r0, #0xAC00\n\t"
+        "add r0, #0x41\n\t"
+        "mov pc, r0\n\t");
 }
 
 void (*CTaskComplexLeaveCar)(uintptr_t** thiz, VEHICLE_TYPE *pVehicle, int iTargetDoor, int iDelayTime, bool bSensibleLeaveCar, bool bForceGetOut);
@@ -713,7 +361,6 @@ int CTouchInterface__IsTouchDown_Hook(uintptr_t thiz, uintptr_t touch)
 	if(thiz == 1 && touch == 2)
 	{
 		// enter vehicle
-		// naaah. it's damn bullshit
 	}
 
 	return CTouchInterface__IsTouchDown(thiz, touch);
@@ -723,15 +370,6 @@ void (*CGame__Process)();
 void CGame__Process_Hook()
 {
 	CGame__Process();
-
-	if (pNetGame)
-	{
-		CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
-
-		if (pTextDrawPool) {
-			pTextDrawPool->SnapshotProcess();
-		}
-	}
 }
 
 uint16_t gxt_string[0x7F];
@@ -750,10 +388,10 @@ uint16_t* CText__Get_Hook(uintptr_t thiz, const char* text)
 	return ((uint16_t*(*)(uintptr_t, const char*))(g_GTASAAdr + 0x54DB8C+1))(thiz, text);
 }
 
-uint32_t (*CHudColours__GetIntColour)(uintptr_t thiz, int a2);
-uint32_t CHudColours__GetIntColour_Hook(uintptr_t thiz, int a2)
+uint32_t (*CHudColours__GetIntColour)(uintptr_t thiz);
+uint32_t CHudColours__GetIntColour_Hook(uintptr_t thiz)
 {
-	return TranslateColorCodeToRGBA(a2);
+	return TranslateColorCodeToRGBA(thiz);
 }
 
 void (*CWorld__ProcessPedsAfterPreRender)();
@@ -772,6 +410,104 @@ void CWorld__ProcessPedsAfterPreRender_Hook()
 	}
 }
 
+uint32_t (*CheckIfNewEntityNeedsScript)(uintptr_t thiz, int a2, int a3);
+uint32_t CheckIfNewEntityNeedsScript_Hook(uintptr_t thiz, int a2, int a3)
+{
+	if(thiz && a2) {
+		return CheckIfNewEntityNeedsScript(thiz, a2, a3);
+	}
+
+	return 0;
+}
+
+bool (*CPad__ExitVehicleJustDown)(uintptr_t thiz, int a2, uintptr_t vehicle, int a4, uintptr_t vec);
+bool CPad__ExitVehicleJustDown_Hook(uintptr_t thiz, int a2, uintptr_t vehicle, int a4, uintptr_t vec)
+{
+	uintptr_t dwRetAddr = 0;
+	__asm__ volatile ("mov %0, lr" : "=r" (dwRetAddr));
+	dwRetAddr -= g_GTASAAdr;
+
+	if(!vehicle) {
+		return false;
+	}
+
+	bool bResult = CPad__ExitVehicleJustDown(thiz, a2, vehicle, a4, vec);
+
+	// 40AB80
+	if(bResult && dwRetAddr >= 0x40AB70 && dwRetAddr <= 0x40AB90) 
+	{
+		FLog("CPad__ExitVehicleJustDown: task enter vehicle");
+		
+		if(!NotifyEnterVehicle((VEHICLE_TYPE*)vehicle)) {
+			return false;
+		}
+	}
+
+	return bResult;
+}
+
+uint32_t dwParam1, dwParam2;
+extern "C" void pickup_pickedup()
+{
+	if(pNetGame && pNetGame->GetPickupPool())
+	{
+		CPickupPool *pPickups = pNetGame->GetPickupPool();
+		pPickups->PickedUp( ((dwParam1-(g_GTASAAdr+0x70E264))/0x20) );
+	}
+}
+
+extern "C" void pickup_orig()
+{
+	ARMHook::writeMemory(g_GTASAAdr + 0x31E08C, (uintptr_t)"\x9A\xF8\x1C\x00\x13\x28\x00\xF2\x8F\x80\x01\x21", 12);
+}
+
+__attribute__((naked)) void PickupPickUp_hook(int a1, uint32_t a2, uint32_t a3, uint32_t a4)
+{
+	// ---------------------------------------------------------------
+	__asm__ volatile(".byte 0x00, 0xB5\n\t");  						
+	__asm__ volatile(".byte 0x01, 0xB4\n\t");  						
+	// ---------------------------------------------------------------
+	__asm__ volatile("blx get_lib\n\t");  							
+	// ---------------------------------------------------------------
+	__asm__ volatile(".byte 0x00, 0xF5, 0x44, 0x10\n\t");  			
+	__asm__ volatile(".byte 0x00, 0xF5, 0x60, 0x40\n\t");  			
+	__asm__ volatile(".byte 0x00, 0xF1, 0x8D, 0x00\n\t");  			
+	__asm__ volatile(".byte 0x01, 0x46\n\t");  						
+	__asm__ volatile(".byte 0x01, 0xBC\n\t");  						
+	__asm__ volatile(".byte 0x5D, 0xF8, 0x04, 0xEB\n\t");  				
+	__asm__ volatile(".byte 0x02, 0xB4\n\t");  	
+	// ---------------------------------------------------------------					
+	__asm__ volatile("push {r0-r11, lr}\n\t"
+					"mov %0, r11" : "=r" (dwParam1));
+	// ---------------------------------------------------------------
+	__asm__ volatile(".byte 0x51, 0x46\n\t");  						
+	__asm__ volatile(".byte 0x78, 0x44\n\t");  						
+	__asm__ volatile(".byte 0x00, 0x68\n\t");  						
+	__asm__ volatile(".byte 0x01, 0x60\n\t");  		
+	// ---------------------------------------------------------------				
+	__asm__ volatile("blx pickup_pickedup\n\t"); 	
+	__asm__ volatile("blx pickup_orig\n\t");  			
+	// ---------------------------------------------------------------
+	__asm__ volatile(".byte 0xBD, 0xE8, 0xFF, 0x4F\n\t");  		
+	__asm__ volatile(".byte 0x00, 0xBD\n\t");  			
+	// ---------------------------------------------------------------
+	// What the fuck is this variable, what is the value? can cut this value as bytes?
+	// or is it worth finding a similar function?
+}
+
+uint32_t (*CPickup_Update)(unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4);
+uint32_t CPickup_Update_hook(unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4)
+{
+	ARMHook::InjectCode(g_GTASAAdr + 0x31E08C, (uintptr_t)PickupPickUp_hook, 1);
+  	return CPickup_Update(a1, a2, a3, a4);
+}
+
+int (*CPlaceable_InitMatrixArray)(uintptr_t thiz);
+int CPlaceable_InitMatrixArray_hook(uintptr_t thiz)
+{
+	return ((int (__fastcall *)(int, signed int))(g_GTASAAdr + 0x407F85))(g_GTASAAdr + 0x95A988, 10000);
+}
+
 void InstallGlobalHooks()
 {
 	FLog("InstallGlobalHooks");
@@ -780,27 +516,17 @@ void InstallGlobalHooks()
 
 	ARMHook::installPLTHook(g_GTASAAdr + 0x6625E0, (uintptr_t)MainMenuScreen__Update_Hook, (uintptr_t*)&MainMenuScreen__Update);
 	ARMHook::installPLTHook(g_GTASAAdr + 0x67589C, (uintptr_t)Render2dStuff_Hook, (uintptr_t*)&Render2dStuff);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x672448, (uintptr_t)NvFOpen__Hook, (uintptr_t*)&NvFOpen); 
+	
 	ARMHook::installPLTHook(g_GTASAAdr + 0x674C68, (uintptr_t)CStream__InitImageList_Hook, (uintptr_t*)&CStream__InitImageList); 
 	ARMHook::installPLTHook(g_GTASAAdr + 0x66F2D0, (uintptr_t)CGame__InitialiseRenderWare_Hook, (uintptr_t*)&CGame__InitialiseRenderWare); 
-	ARMHook::installPLTHook(g_GTASAAdr + 0x675D98, (uintptr_t)CModelInfo__AddPedModel_Hook, (uintptr_t*)&CModelInfo__AddPedModel);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x67579C, (uintptr_t)CModelInfo__AddAtomicModel_Hook, (uintptr_t*)&CModelInfo__AddAtomicModel);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x672468, (uintptr_t)CPools__Initialise_Hook, (uintptr_t*)&CPools__Initialise);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x675554, (uintptr_t)CPlaceable__InitMatrixArray_Hook, (uintptr_t*)&CPlaceable__InitMatrixArray);
-	ARMHook::installPLTHook(g_GTASAAdr + 0x66FE58, (uintptr_t)CGame__Process_Hook, (uintptr_t*)&CGame__Process);
+	// ARMHook::installPLTHook(g_GTASAAdr + 0x675D98, (uintptr_t)CModelInfo__AddPedModel_Hook, (uintptr_t*)&CModelInfo__AddPedModel);
 	ARMHook::installPLTHook(g_GTASAAdr + 0x673950, (uintptr_t)CHudColours__GetIntColour_Hook, (uintptr_t*)&CHudColours__GetIntColour);
-	// ARMHook::installPLTHook(g_GTASAAdr + 0x675C68, (uintptr_t)CWorld__ProcessPedsAfterPreRender_Hook, (uintptr_t*)&CWorld__ProcessPedsAfterPreRender);
 
-	// CTaskComplexEnterCarAsDriver
-	// SetupGameHook(g_GTASAAdr + 0x4F6F70, (uintptr_t)CTaskComplexEnterCarAsDriver_Hook, (uintptr_t*)&CTaskComplexEnterCarAsDriver);
-
-	// CTaskComplexLeaveCar::CTaskComplexLeaveCar
+	ARMHook::InjectCode(g_GTASAAdr + 0x40AC28, (uintptr_t)TaskEnterVehicle_hook, 0);
 	SetupGameHook(g_GTASAAdr + 0x4F8904, (uintptr_t)CTaskComplexLeaveCar_Hook, (uintptr_t*)&CTaskComplexLeaveCar);
 
-	// CTouchInterface__IsTouchDown
-	// SetupGameHook(g_GTASAAdr + 0x2B0A38, (uintptr_t)CTouchInterface__IsTouchDown_Hook, (uintptr_t*)&CTouchInterface__IsTouchDown);
+	ARMHook::installPLTHook(g_GTASAAdr + 0x675554, (uintptr_t)CPlaceable_InitMatrixArray_hook, (uintptr_t*)&CPlaceable_InitMatrixArray);
 
-	InstallCrashFixHooks();
 	InstallSAMPHooks();
 	HookCPad();
 }

@@ -492,15 +492,8 @@ bool CChatWindow::OnTouchEvent(int type, bool multi, int x, int y)
 							{
 								if(pNetGame)
 								{
-									CTextDrawPool* pTextDrawPool = pNetGame->GetTextDrawPool();
-									if(pTextDrawPool)
-									{
-										if(pTextDrawPool->GetState() != true)
-										{
-											pKeyBoard->Open(&ChatWindowInputHandler);
-											m_dwLastMessageUpdateTick = GetTickCount();
-										}
-									}
+									pKeyBoard->Open(&ChatWindowInputHandler);
+									m_dwLastMessageUpdateTick = GetTickCount();
 								}
 							}
 						}

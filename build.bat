@@ -1,4 +1,4 @@
 echo off
-call clear
-echo [CDS4R BUILDER] Create a library..
-call ../../../opt/android-ndk-r15c/ndk-build.cmd
+call cls
+echo [armeabi-v7a] Create a library..
+call ../../ndk/android-ndk-r16b/ndk-build.cmd

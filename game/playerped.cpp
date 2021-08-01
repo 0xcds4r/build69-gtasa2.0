@@ -29,6 +29,7 @@ CPlayerPed::CPlayerPed(uint8_t bytePlayerNumber, int iSkin, float fX, float fY, 
 
 	m_pPed = nullptr;
 	m_dwGTAId = 0;
+	m_dwArrow = 0;
 
 	ScriptCommand(&create_player, &iPlayerNum, fX, fY, fZ, &dwPlayerActorID);
 	ScriptCommand(&create_actor_from_player, &iPlayerNum, &dwPlayerActorID);
@@ -126,15 +127,24 @@ bool CPlayerPed::IsInVehicle()
 // 0.3.7
 bool CPlayerPed::IsAPassenger()
 {
-	if(*(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590) && IsInVehicle())
+	if(m_pPed)
 	{
-		VEHICLE_TYPE *pVehicle = *(VEHICLE_TYPE**)(m_pPed + 0x590);
-		ENTITY_TYPE* g_pEntity = (ENTITY_TYPE*)&pVehicle->entity;
+		uintptr_t pVehicle = *(uintptr_t *)((uintptr_t)m_pPed + 1424);
 
-		if(	*(PED_TYPE**)((uintptr_t)pVehicle + 0x464) != m_pPed ||
-			*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_PASSENGER ||
-			*(uint16_t*)((uintptr_t)g_pEntity + 0x26) == TRAIN_FREIGHT )
-			return true;
+		if(pVehicle)
+		{
+			if(*(uint8_t *)((uintptr_t)m_pPed + 1157) << 31 != 0) 
+			{
+				if ( *(uintptr_t *)((uintptr_t)pVehicle + 1124) != (uintptr_t)m_pPed ) {
+    				return true;
+				}
+
+				uint16_t v5 = (uint16_t)(*(uint16_t *)((uintptr_t)pVehicle + 38) - 569);
+  				if ( v5 < 2 ) {
+    				return true;
+  				}
+			}
+		}
 	}
 
 	return false;
@@ -143,7 +153,12 @@ bool CPlayerPed::IsAPassenger()
 // 0.3.7
 VEHICLE_TYPE* CPlayerPed::GetGtaVehicle()
 {
-	return *(VEHICLE_TYPE**)(m_pPed + 0x590);
+	if(!m_pPed) {
+		return nullptr;
+	}
+
+	uintptr_t pVehicle = *(uintptr_t *)((uintptr_t)m_pPed + 1424);
+	return (VEHICLE_TYPE*)pVehicle;
 }
 
 // 0.3.7
@@ -161,39 +176,53 @@ void CPlayerPed::RemoveFromVehicleAndPutAt(float fX, float fY, float fZ)
 // 0.3.7 (2.0)
 void CPlayerPed::SetInitialState()
 {
-	(( void (*)(uintptr_t))(g_GTASAAdr+0x4C3745))((uintptr_t)m_pPed);
+	(( int (*)(uintptr_t, bool))(g_GTASAAdr+0x4C3745))((uintptr_t)m_pPed, false);
 }
 
 // 0.3.7
 void CPlayerPed::SetHealth(float fHealth)
 {
-	if(!m_pPed) return;
+	if(!m_pPed) {
+		return;
+	}
+
 	*(float*)((uintptr_t)m_pPed + 0x544) = fHealth;
 }
 
 // 0.3.7
 float CPlayerPed::GetHealth()
 {
-	if(!m_pPed) return 0.0f;
+	if(!m_pPed) {
+		return 0.0f;
+	}
+
 	return *(float*)((uintptr_t)m_pPed + 0x544);
 }
 
 // 0.3.7
 void CPlayerPed::SetArmour(float fArmour)
 {
-	if(!m_pPed) return;
+	if(!m_pPed) {
+		return;
+	}
+
 	*(float*)((uintptr_t)m_pPed + 0x54C) = fArmour;
 }
 
 float CPlayerPed::GetArmour()
 {
-	if(!m_pPed) return 0.0f;
+	if(!m_pPed) {
+		return 0.0f;
+	}
+
 	return *(float*)((uintptr_t)m_pPed + 0x54C);
 }
 
 void CPlayerPed::SetInterior(uint8_t byteID)
 {
-	if(!m_pPed) return;
+	if(!m_pPed) {
+		return;
+	}
 
 	ScriptCommand(&select_interior, byteID);
 	ScriptCommand(&link_actor_to_interior, m_dwGTAId, byteID);
@@ -205,14 +234,30 @@ void CPlayerPed::SetInterior(uint8_t byteID)
 
 void CPlayerPed::PutDirectlyInVehicle(int iVehicleID, int iSeat)
 {
-	if(!m_pPed) return;
-	if(!GamePool_Vehicle_GetAt(iVehicleID)) return;
-	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
+	if(!m_pPed) {
+		return;
+	}
+
+	if(!GamePool_Vehicle_GetAt(iVehicleID)) {
+		return;
+	}
+
+	if(!GamePool_Ped_GetAt(m_dwGTAId)) {
+		return;
+	}
 
 	VEHICLE_TYPE *pVehicle = GamePool_Vehicle_GetAt(iVehicleID);
+	if(!pVehicle) {
+		return;
+	}
 
-	if(*(float*)((uintptr_t)pVehicle + 0x4CC) == 0.0f) return;
-	if (pVehicle->entity.vtable == g_GTASAAdr+0x667D24) return;
+	if(*(float*)((uintptr_t)pVehicle + 0x4CC) == 0.0f) {
+		return;
+	}
+
+	if (pVehicle->entity.vtable == g_GTASAAdr+0x667D24) {
+		return;
+	}
 
 	if(iSeat == 0)
 	{
@@ -237,10 +282,18 @@ void CPlayerPed::PutDirectlyInVehicle(int iVehicleID, int iSeat)
 
 void CPlayerPed::EnterVehicle(int iVehicleID, bool bPassenger)
 {
-	if(!m_pPed) return;
-	VEHICLE_TYPE* ThisVehicleType;
-	if((ThisVehicleType = GamePool_Vehicle_GetAt(iVehicleID)) == 0) return;
-	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
+	if(!m_pPed) {
+		return;
+	}
+
+	VEHICLE_TYPE* ThisVehicleType = nullptr;
+	if((ThisVehicleType = GamePool_Vehicle_GetAt(iVehicleID)) == 0) {
+		return;
+	}
+
+	if(!GamePool_Ped_GetAt(m_dwGTAId)) {
+		return;
+	}
 
 	if(bPassenger)
 	{
@@ -289,7 +342,9 @@ void CPlayerPed::ExitCurrentVehicle()
 // 0.3.7
 int CPlayerPed::GetCurrentVehicleID()
 {
-	if(!m_pPed) return 0;
+	if(!m_pPed) {
+		return 0;
+	}
 
 	VEHICLE_TYPE *pVehicle = *(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590);
 	return GamePool_Vehicle_GetIndex(pVehicle);
@@ -297,7 +352,7 @@ int CPlayerPed::GetCurrentVehicleID()
 
 int CPlayerPed::GetVehicleSeatID()
 {
-	VEHICLE_TYPE *pVehicle;
+	VEHICLE_TYPE *pVehicle = nullptr;
 
 	if( GetActionTrigger() == ACTION_INCAR && (pVehicle = *(VEHICLE_TYPE**)((uintptr_t)m_pPed + 0x590)) != 0 ) 
 	{
@@ -397,6 +452,7 @@ void CPlayerPed::SetArmedWeapon(int iWeaponID)
 
 uint8_t CPlayerPed::GetCurrentWeapon()
 {
+	return 0;
 	// nothing
 }
 
@@ -419,8 +475,13 @@ void CPlayerPed::RestartIfWastedAt(VECTOR *vecRestart, float fRotation)
 // 0.3.7
 void CPlayerPed::ForceTargetRotation(float fRotation)
 {
-	if(!m_pPed) return;
-	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
+	if(!m_pPed) {
+		return;
+	}
+
+	if(!GamePool_Ped_GetAt(m_dwGTAId)) {
+		return;
+	}
 
 	*(float*)((uintptr_t)m_pPed + 0x55C) = DegToRad(fRotation);
 	*(float*)((uintptr_t)m_pPed + 0x560) = DegToRad(fRotation);
@@ -430,8 +491,13 @@ void CPlayerPed::ForceTargetRotation(float fRotation)
 
 void CPlayerPed::SetRotation(float fRotation)
 {
-	if(!m_pPed) return;
-	if(!GamePool_Ped_GetAt(m_dwGTAId)) return;
+	if(!m_pPed) {
+		return;
+	}
+
+	if(!GamePool_Ped_GetAt(m_dwGTAId)) {
+		return;
+	}
 
 	*(float*)((uintptr_t)m_pPed + 0x55C) = DegToRad(fRotation);
 	*(float*)((uintptr_t)m_pPed + 0x560) = DegToRad(fRotation);
@@ -440,6 +506,10 @@ void CPlayerPed::SetRotation(float fRotation)
 // 0.3.7
 uint8_t CPlayerPed::GetActionTrigger()
 {
+	if(!m_pPed) {
+		return 0;
+	}
+
 	return *(uint8_t*)((uintptr_t)m_pPed + 0x44C);
 }
 
@@ -459,6 +529,10 @@ bool CPlayerPed::IsDead()
 
 void CPlayerPed::SetMoney(int iAmount)
 {
+	if(!GamePool_Ped_GetAt(m_dwGTAId)) {
+		return;
+	}
+
 	ScriptCommand(&set_actor_money, m_dwGTAId, 0);
 	ScriptCommand(&set_actor_money, m_dwGTAId, iAmount);
 }
